@@ -3,14 +3,18 @@ import Link from "next/link";
 
 import { PublicCard } from "@/components/public/public-card";
 import { cn } from "@/lib/utils";
-import type { getPublicHomeData } from "@/services/public-home.service";
+import type { PublicNewsArticle as ServicePublicNewsArticle } from "@/services/public-news.service";
 
-type PublicHomeData = Awaited<ReturnType<typeof getPublicHomeData>>;
-
-export type PublicNewsArticle = NonNullable<PublicHomeData["featuredNews"]>;
+export type PublicNewsArticle = ServicePublicNewsArticle;
+export type PublicNewsCardArticle = Omit<
+  PublicNewsArticle,
+  "publishedAt"
+> & {
+  publishedAt: Date | string | null;
+};
 
 type PublicNewsCardProps = {
-  article: PublicNewsArticle;
+  article: PublicNewsCardArticle;
   variant?: "default" | "compact";
   className?: string;
 };
@@ -22,8 +26,10 @@ const dateFormatter = new Intl.DateTimeFormat("en", {
   timeZone: "UTC",
 });
 
-function isValidDate(value: Date | null): value is Date {
-  return value instanceof Date && !Number.isNaN(value.getTime());
+function normalizePublishedAt(value: Date | string | null) {
+  const date = value instanceof Date ? value : new Date(value ?? "");
+
+  return Number.isNaN(date.getTime()) ? null : date;
 }
 
 export function PublicNewsCard({
@@ -32,9 +38,7 @@ export function PublicNewsCard({
   className,
 }: PublicNewsCardProps) {
   const compact = variant === "compact";
-  const publishedAt = isValidDate(article.publishedAt)
-    ? article.publishedAt
-    : null;
+  const publishedAt = normalizePublishedAt(article.publishedAt);
 
   return (
     <PublicCard interactive className={cn("h-full", className)}>

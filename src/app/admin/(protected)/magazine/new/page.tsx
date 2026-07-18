@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { connection } from "next/server";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 
@@ -11,6 +12,8 @@ import { cn } from "@/lib/utils";
 import { getMagazineFormOptions } from "@/services/magazine.service";
 
 export default async function NewMagazinePage() {
+  await connection();
+
   const user = await requireAdmin();
   if (!canCreateMagazine(user.role)) {
     redirect("/admin/magazine?error=forbidden");

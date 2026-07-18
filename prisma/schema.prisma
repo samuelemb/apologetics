@@ -1,0 +1,366 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRole {
+  SUPER_ADMIN
+  ADMIN
+  EDITOR
+  AUTHOR
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  INVITED
+}
+
+enum ContentStatus {
+  DRAFT
+  SCHEDULED
+  PUBLISHED
+  ARCHIVED
+}
+
+enum EventStatus {
+  DRAFT
+  SCHEDULED
+  PUBLISHED
+  ARCHIVED
+  CANCELLED
+}
+
+enum CategoryType {
+  NEWS
+  EVENT
+  MAGAZINE
+  GENERAL
+}
+
+enum ContactMessageStatus {
+  NEW
+  READ
+  REPLIED
+  ARCHIVED
+  SPAM
+}
+
+enum SubscriberStatus {
+  PENDING
+  ACTIVE
+  UNSUBSCRIBED
+  BLOCKED
+}
+
+enum ContentType {
+  NEWS
+  EVENT
+  MAGAZINE
+}
+
+enum MediaProvider {
+  UPLOADTHING
+}
+
+enum MediaAssetKind {
+  NEWS_COVER
+  EVENT_COVER
+  MAGAZINE_COVER
+  MAGAZINE_PDF
+}
+
+enum MediaAssetStatus {
+  PENDING
+  ATTACHED
+  ORPHANED
+  DELETED
+}
+
+model User {
+  id             String          @id @default(cuid())
+  name           String
+  email          String          @unique
+  passwordHash   String
+  image          String?
+  role           UserRole        @default(AUTHOR)
+  status         UserStatus      @default(INVITED)
+  lastLoginAt    DateTime?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  auditLogs      AuditLog[]
+  events         Event[]
+  magazineIssues MagazineIssue[]
+  mediaAssets    MediaAsset[]
+  newsArticles   NewsArticle[]
+
+  @@index([role, status])
+}
+
+model NewsArticle {
+  id                String           @id @default(cuid())
+  title             String
+  slug              String           @unique
+  excerpt           String?
+  content           String
+  coverImageUrl     String?
+  coverImageAlt     String?
+  coverImageAssetId String?          @unique
+  status            ContentStatus    @default(DRAFT)
+  featured          Boolean          @default(false)
+  publishedAt       DateTime?
+  scheduledFor      DateTime?
+  archivedAt        DateTime?
+  viewCount         Int              @default(0)
+  authorId          String?
+  categoryId        String?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  author            User?            @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  category          Category?        @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  coverImageAsset   MediaAsset?      @relation("NewsCoverAsset", fields: [coverImageAssetId], references: [id], onDelete: SetNull)
+  tags              NewsArticleTag[]
+
+  @@index([status, publishedAt])
+  @@index([featured, status, publishedAt])
+  @@index([categoryId, status, publishedAt])
+  @@index([authorId])
+}
+
+model Event {
+  id                   String      @id @default(cuid())
+  title                String
+  slug                 String      @unique
+  summary              String?
+  content              String
+  coverImageUrl        String?
+  coverImageAlt        String?
+  coverImageAssetId    String?     @unique
+  location             String?
+  isOnline             Boolean     @default(false)
+  onlineUrl            String?
+  registrationUrl      String?
+  startAt              DateTime
+  endAt                DateTime?
+  registrationDeadline DateTime?
+  capacity             Int?
+  status               EventStatus @default(DRAFT)
+  featured             Boolean     @default(false)
+  publishedAt          DateTime?
+  scheduledFor         DateTime?
+  viewCount            Int         @default(0)
+  authorId             String?
+  categoryId           String?
+  createdAt            DateTime    @default(now())
+  updatedAt            DateTime    @updatedAt
+  author               User?       @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  category             Category?   @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  coverImageAsset      MediaAsset? @relation("EventCoverAsset", fields: [coverImageAssetId], references: [id], onDelete: SetNull)
+  tags                 EventTag[]
+
+  @@index([status, startAt])
+  @@index([featured, status, startAt])
+  @@index([categoryId, status, startAt])
+  @@index([authorId])
+}
+
+model MagazineIssue {
+  id                String             @id @default(cuid())
+  title             String
+  slug              String             @unique
+  issueNumber       String             @unique
+  volume            String?
+  description       String?
+  coverImageUrl     String?
+  coverImageAlt     String?
+  coverImageAssetId String?            @unique
+  pdfUrl            String
+  pdfFileName       String?
+  pdfFileSize       Int?
+  pdfAssetId        String?            @unique
+  pageCount         Int?
+  publicationDate   DateTime?
+  status            ContentStatus      @default(DRAFT)
+  featured          Boolean            @default(false)
+  downloadCount     Int                @default(0)
+  viewCount         Int                @default(0)
+  authorId          String?
+  categoryId        String?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  author            User?              @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  category          Category?          @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  coverImageAsset   MediaAsset?        @relation("MagazineCoverAsset", fields: [coverImageAssetId], references: [id], onDelete: SetNull)
+  pdfAsset          MediaAsset?        @relation("MagazinePdfAsset", fields: [pdfAssetId], references: [id], onDelete: SetNull)
+  tags              MagazineIssueTag[]
+
+  @@index([status, publicationDate])
+  @@index([featured, status, publicationDate])
+  @@index([categoryId, status, publicationDate])
+  @@index([authorId])
+}
+
+model Category {
+  id             String          @id @default(cuid())
+  name           String
+  slug           String          @unique
+  description    String?
+  type           CategoryType    @default(GENERAL)
+  isActive       Boolean         @default(true)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  events         Event[]
+  magazineIssues MagazineIssue[]
+  newsArticles   NewsArticle[]
+
+  @@index([type, isActive])
+}
+
+model Tag {
+  id             String             @id @default(cuid())
+  name           String
+  slug           String             @unique
+  description    String?
+  isActive       Boolean            @default(true)
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+  events         EventTag[]
+  magazineIssues MagazineIssueTag[]
+  newsArticles   NewsArticleTag[]
+
+  @@index([isActive])
+}
+
+model NewsArticleTag {
+  newsArticleId String
+  tagId         String
+  newsArticle   NewsArticle @relation(fields: [newsArticleId], references: [id], onDelete: Cascade)
+  tag           Tag         @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([newsArticleId, tagId])
+  @@index([tagId])
+}
+
+model EventTag {
+  eventId String
+  tagId   String
+  event   Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  tag     Tag    @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([eventId, tagId])
+  @@index([tagId])
+}
+
+model MagazineIssueTag {
+  magazineIssueId String
+  tagId           String
+  magazineIssue   MagazineIssue @relation(fields: [magazineIssueId], references: [id], onDelete: Cascade)
+  tag             Tag           @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([magazineIssueId, tagId])
+  @@index([tagId])
+}
+
+model ContactMessage {
+  id         String               @id @default(cuid())
+  name       String
+  email      String
+  phone      String?
+  subject    String?
+  message    String
+  status     ContactMessageStatus @default(NEW)
+  adminNotes String?
+  readAt     DateTime?
+  repliedAt  DateTime?
+  createdAt  DateTime             @default(now())
+  updatedAt  DateTime             @updatedAt
+
+  @@index([status, createdAt])
+  @@index([email])
+}
+
+model Subscriber {
+  id                String           @id @default(cuid())
+  email             String           @unique
+  name              String?
+  status            SubscriberStatus @default(PENDING)
+  verificationToken String?
+  verifiedAt        DateTime?
+  unsubscribedAt    DateTime?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  @@index([status, createdAt])
+}
+
+model SiteSetting {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  value       String
+  group       String
+  description String?
+  isPublic    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([group, isPublic])
+}
+
+model ContentView {
+  id          String      @id @default(cuid())
+  contentType ContentType
+  contentId   String
+  sessionId   String?
+  ipHash      String?
+  userAgent   String?
+  referrer    String?
+  viewedAt    DateTime    @default(now())
+
+  @@index([contentType, contentId, viewedAt])
+  @@index([viewedAt])
+  @@index([sessionId])
+}
+
+model MediaAsset {
+  id               String           @id @default(cuid())
+  provider         MediaProvider    @default(UPLOADTHING)
+  kind             MediaAssetKind
+  status           MediaAssetStatus @default(PENDING)
+  fileKey          String           @unique
+  url              String
+  originalName     String
+  mimeType         String
+  sizeBytes        Int
+  uploadedById     String?
+  createdAt        DateTime         @default(now())
+  attachedAt       DateTime?
+  deletedAt        DateTime?
+  uploadedBy       User?            @relation(fields: [uploadedById], references: [id], onDelete: SetNull)
+  newsCoverFor     NewsArticle?     @relation("NewsCoverAsset")
+  eventCoverFor    Event?           @relation("EventCoverAsset")
+  magazineCoverFor MagazineIssue?   @relation("MagazineCoverAsset")
+  magazinePdfFor   MagazineIssue?   @relation("MagazinePdfAsset")
+
+  @@index([status, createdAt])
+  @@index([kind, status])
+  @@index([uploadedById, status])
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  userId     String?
+  action     String
+  entityType String
+  entityId   String?
+  metadata   Json?
+  createdAt  DateTime @default(now())
+  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt])
+  @@index([entityType, entityId])
+  @@index([action, createdAt])
+}

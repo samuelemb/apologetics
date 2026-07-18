@@ -1,6 +1,7 @@
 "use client";
 
 import { Menu, Search, X } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
@@ -16,11 +17,13 @@ function NavigationLink({
   label,
   pathname,
   onNavigate,
+  mobile = false,
 }: {
   href: string;
   label: string;
   pathname: string;
   onNavigate?: () => void;
+  mobile?: boolean;
 }) {
   const route = href.split("?")[0];
   const active =
@@ -33,8 +36,14 @@ function NavigationLink({
       onClick={onNavigate}
       aria-current={active ? "page" : undefined}
       className={cn(
-        "flex min-h-10 items-center border-b-2 border-transparent px-1 text-sm font-medium text-neutral-700 transition-colors hover:text-[#a3162d] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#a3162d]",
-        active && "border-[#a3162d] text-[#a3162d]",
+        "relative flex min-h-11 items-center text-sm font-semibold text-public-muted-text transition-colors hover:text-public-primary focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-public-primary",
+        mobile
+          ? "rounded-[var(--public-radius)] px-3 py-2 hover:bg-public-primary-soft"
+          : "px-1.5 after:absolute after:inset-x-1.5 after:bottom-0 after:h-0.5 after:origin-center after:scale-x-0 after:rounded-full after:bg-public-primary after:transition-transform",
+        active &&
+          (mobile
+            ? "bg-public-primary-soft text-public-primary"
+            : "text-public-primary after:scale-x-100"),
       )}
     >
       {label}
@@ -47,79 +56,100 @@ export function PublicHeader() {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
-    <header className="relative z-40 border-b border-neutral-200 bg-white">
-      <div className="h-1 bg-[#a3162d]" />
-      <div className="mx-auto flex h-18 max-w-7xl items-center gap-6 px-4 sm:px-6 lg:px-8">
+    <header className="relative z-40 border-b border-public-border bg-public-surface shadow-[var(--public-shadow)]">
+      <div className="mx-auto flex h-20 w-full max-w-[1280px] items-center gap-3 px-4 sm:gap-5 sm:px-6 xl:h-24 xl:px-8">
         <Link
           href="/"
-          className="flex min-w-0 shrink-0 items-center gap-3 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#a3162d]"
+          className="flex min-w-0 shrink items-center gap-2.5 focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-public-primary sm:gap-3"
           aria-label="APOLOGETICS መፅሔት home"
         >
-          <span className="flex size-9 items-center justify-center bg-[#a3162d] text-lg font-bold text-white">
-            A
-          </span>
+          <Image
+            src="/images/apologetics-logo.png"
+            alt="APOLOGETICS መፅሔት logo"
+            width={72}
+            height={72}
+            priority
+            className="size-12 shrink-0 rounded-full object-contain sm:size-14 xl:size-16"
+          />
           <span className="min-w-0 leading-tight">
-            <span className="block text-sm font-bold text-neutral-950 sm:text-base">
-              APOLOGETICS
+            <span className="block font-editorial text-[0.82rem] font-bold tracking-[0.015em] text-public-primary sm:text-lg xl:text-xl">
+              APOLOGETICS <span className="whitespace-nowrap">መፅሔት</span>
             </span>
-            <span className="block text-xs font-medium text-[#a3162d]">መፅሔት</span>
+            <span className="mt-1 hidden text-xs font-medium tracking-wide text-public-muted-text sm:block xl:text-[0.8125rem]">
+              Truth. Knowledge. Dawah.
+            </span>
           </span>
         </Link>
 
-        <nav className="ml-auto hidden items-stretch gap-5 self-stretch lg:flex" aria-label="Primary navigation">
+        <nav
+          className="ml-auto hidden h-full items-stretch gap-5 xl:flex 2xl:gap-7"
+          aria-label="Primary navigation"
+        >
           {publicPrimaryNavigation.map((item) => (
             <NavigationLink key={item.label} {...item} pathname={pathname} />
           ))}
         </nav>
 
-        <div className="ml-auto flex items-center gap-2 lg:ml-0">
+        <div className="ml-auto flex shrink-0 items-center gap-2.5 xl:ml-3">
           <Link
             href={publicActionNavigation.search.href}
-            className="inline-flex size-9 items-center justify-center text-neutral-700 transition-colors hover:bg-neutral-100 hover:text-[#a3162d] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#a3162d]"
+            className="inline-flex size-11 items-center justify-center rounded-full border border-public-border bg-public-surface text-public-text shadow-[var(--public-shadow)] transition-colors hover:border-public-primary/30 hover:bg-public-primary-soft hover:text-public-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-public-primary"
             aria-label="Search"
             title="Search"
           >
-            <Search className="size-5" />
+            <Search className="size-5" aria-hidden="true" />
           </Link>
           <Link
             href={publicActionNavigation.donate.href}
-            className="hidden h-9 items-center bg-[#a3162d] px-4 text-sm font-semibold text-white transition-colors hover:bg-[#821124] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#a3162d] sm:inline-flex"
+            className="hidden h-11 items-center justify-center rounded-[var(--public-radius)] bg-public-primary px-5 text-sm font-bold text-white shadow-sm transition-colors hover:bg-public-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-public-primary sm:inline-flex"
           >
             Donate
           </Link>
           <button
             type="button"
-            className="inline-flex size-9 items-center justify-center text-neutral-800 hover:bg-neutral-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#a3162d] lg:hidden"
+            className="inline-flex size-11 items-center justify-center rounded-[var(--public-radius)] border border-public-border bg-public-surface text-public-text transition-colors hover:bg-public-primary-soft hover:text-public-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-public-primary xl:hidden"
             onClick={() => setMobileOpen((open) => !open)}
             aria-label={mobileOpen ? "Close navigation" : "Open navigation"}
             aria-expanded={mobileOpen}
+            aria-controls="public-mobile-navigation"
           >
-            {mobileOpen ? <X className="size-5" /> : <Menu className="size-5" />}
+            {mobileOpen ? (
+              <X className="size-5" aria-hidden="true" />
+            ) : (
+              <Menu className="size-5" aria-hidden="true" />
+            )}
           </button>
         </div>
       </div>
 
-      {mobileOpen && (
-        <div className="absolute inset-x-0 top-full border-t border-neutral-200 bg-white shadow-lg lg:hidden">
-          <nav className="mx-auto grid max-w-7xl gap-1 px-4 py-4 sm:px-6" aria-label="Mobile navigation">
+      {mobileOpen ? (
+        <div
+          id="public-mobile-navigation"
+          className="absolute inset-x-0 top-full max-h-[calc(100vh-5rem)] overflow-y-auto border-t border-public-border bg-public-surface shadow-lg xl:hidden"
+        >
+          <nav
+            className="mx-auto grid w-full max-w-[1280px] gap-1 px-4 py-4 sm:px-6"
+            aria-label="Mobile navigation"
+          >
             {publicPrimaryNavigation.map((item) => (
               <NavigationLink
                 key={item.label}
                 {...item}
                 pathname={pathname}
                 onNavigate={() => setMobileOpen(false)}
+                mobile
               />
             ))}
             <Link
               href={publicActionNavigation.donate.href}
               onClick={() => setMobileOpen(false)}
-              className="mt-2 inline-flex h-10 items-center justify-center bg-[#a3162d] px-4 text-sm font-semibold text-white"
+              className="mt-3 inline-flex min-h-11 items-center justify-center rounded-[var(--public-radius)] bg-public-primary px-4 text-sm font-bold text-white transition-colors hover:bg-public-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-public-primary sm:hidden"
             >
               Donate
             </Link>
           </nav>
         </div>
-      )}
+      ) : null}
     </header>
   );
 }

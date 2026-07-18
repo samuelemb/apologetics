@@ -34,6 +34,15 @@
   --color-admin-warning: var(--admin-warning);
   --color-admin-info: var(--admin-info);
   --color-admin-danger: var(--admin-danger);
+  --color-public-primary: var(--public-primary);
+  --color-public-primary-hover: var(--public-primary-hover);
+  --color-public-primary-soft: var(--public-primary-soft);
+  --color-public-text: var(--public-text);
+  --color-public-muted-text: var(--public-muted-text);
+  --color-public-border: var(--public-border);
+  --color-public-surface: var(--public-surface);
+  --color-public-background: var(--public-background);
+  --font-editorial: var(--font-public-editorial);
   --color-chart-5: var(--chart-5);
   --color-chart-4: var(--chart-4);
   --color-chart-3: var(--chart-3);
@@ -118,6 +127,17 @@
   --admin-control-height: 2.75rem;
   --admin-radius: 0.5rem;
   --admin-shadow: 0 1px 2px rgb(15 23 42 / 0.04), 0 4px 14px rgb(15 23 42 / 0.04);
+  --public-primary: #b4000b;
+  --public-primary-hover: #920009;
+  --public-primary-soft: #fff3f3;
+  --public-text: #181414;
+  --public-muted-text: #625b5b;
+  --public-border: #e7e1e1;
+  --public-surface: #ffffff;
+  --public-background: #ffffff;
+  --public-radius: 0.5rem;
+  --public-shadow: 0 1px 2px rgb(24 20 20 / 0.04), 0 4px 14px rgb(24 20 20 / 0.04);
+  --font-public-editorial: Georgia, "Times New Roman", serif;
 }
 
 .dark {

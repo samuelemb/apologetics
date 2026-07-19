@@ -1,4 +1,9 @@
 export const COMING_SOON_FEATURES = {
+  search: {
+    title: "Search is coming soon",
+    message:
+      "Site-wide search across News, Events, and Magazine issues is being prepared.",
+  },
   subscribe: {
     title: "Subscriptions are coming soon",
     message: "Email updates and publication alerts are being prepared.",
@@ -38,6 +43,7 @@ export const COMING_SOON_FEATURES = {
 } as const;
 
 export const COMING_SOON_FEATURE_KEYS = [
+  "search",
   "subscribe",
   "donate",
   "resources",

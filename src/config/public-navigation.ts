@@ -36,7 +36,7 @@ export const publicFooterNavigation = {
 } satisfies Record<string, PublicNavigationLink[]>;
 
 export const publicActionNavigation = {
-  search: { label: "Search", href: "/search" },
+  search: { label: "Search", href: comingSoonHref("search") },
   donate: { label: "Donate", href: comingSoonHref("donate") },
   subscribe: { label: "Subscribe", href: comingSoonHref("subscribe") },
 };

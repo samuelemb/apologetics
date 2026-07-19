@@ -1,5 +1,7 @@
-import { PageTitle } from "@/components/page-title";
+import { redirect } from "next/navigation";
+
+import { comingSoonHref } from "@/config/coming-soon";
 
 export default function SearchPage() {
-  return <PageTitle title="Search" />;
+  redirect(comingSoonHref("search"));
 }

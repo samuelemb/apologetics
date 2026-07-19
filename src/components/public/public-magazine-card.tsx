@@ -1,16 +1,31 @@
-import { BookOpenText, CalendarDays, Files, ImageIcon } from "lucide-react";
+import { BookOpenText, CalendarDays, Files } from "lucide-react";
 import Link from "next/link";
 
 import { PublicCard } from "@/components/public/public-card";
+import { PublicContentImage } from "@/components/public/public-content-image";
 import { cn } from "@/lib/utils";
-import type { getPublicHomeData } from "@/services/public-home.service";
 
-type PublicHomeData = Awaited<ReturnType<typeof getPublicHomeData>>;
+export type PublicMagazineCardItem = {
+  id: string;
+  title: string;
+  slug: string;
+  issueNumber: string;
+  volume: string | null;
+  description: string | null;
+  coverImageUrl: string | null;
+  coverImageAlt: string | null;
+  publicationDate: Date | null;
+  pageCount: number | null;
+  category: {
+    name: string;
+    slug: string;
+  } | null;
+};
 
-export type PublicMagazine = NonNullable<PublicHomeData["latestMagazine"]>;
+export type PublicMagazine = PublicMagazineCardItem;
 
 type PublicMagazineCardProps = {
-  magazine: PublicMagazine;
+  magazine: PublicMagazineCardItem;
   variant?: "default" | "featured";
   className?: string;
 };
@@ -56,24 +71,20 @@ export function PublicMagazineCard({
               : "aspect-[3/4] border-b",
           )}
         >
-          {magazine.coverImageUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={magazine.coverImageUrl}
-              alt={magazine.coverImageAlt?.trim() || magazine.title}
-              loading="lazy"
-              decoding="async"
-              className="size-full object-cover transition-transform duration-300 group-hover:scale-[1.015]"
-            />
-          ) : (
-            <div className="flex size-full flex-col items-center justify-center gap-2 px-4 text-center text-public-muted-text">
-              <ImageIcon className="size-10" aria-hidden="true" />
-              <span className="text-xs">No cover image available</span>
-            </div>
-          )}
+          <PublicContentImage
+            src={magazine.coverImageUrl}
+            alt={magazine.coverImageAlt?.trim() || magazine.title}
+            imageClassName="object-cover transition-transform duration-300 group-hover:scale-[1.015]"
+            fallbackClassName="bg-public-primary-soft"
+          />
         </div>
 
-        <div className={cn("flex min-w-0 flex-col justify-center", featured ? "p-6 sm:p-8" : "p-5")}>
+        <div
+          className={cn(
+            "flex min-w-0 flex-col",
+            featured ? "justify-center p-6 sm:p-8" : "p-4 sm:p-5",
+          )}
+        >
           {magazine.category ? (
             <p className="break-words text-xs font-bold uppercase tracking-[0.1em] text-public-primary">
               {magazine.category.name}
@@ -97,7 +108,12 @@ export function PublicMagazineCard({
             {magazine.title}
           </h3>
           {magazine.description ? (
-            <p className="mt-4 line-clamp-4 break-words text-sm leading-6 text-public-muted-text sm:text-base">
+            <p
+              className={cn(
+                "mt-4 break-words text-sm leading-6 text-public-muted-text",
+                featured ? "line-clamp-4 sm:text-base" : "line-clamp-3",
+              )}
+            >
               {magazine.description}
             </p>
           ) : null}
@@ -111,7 +127,7 @@ export function PublicMagazineCard({
                 </time>
               </span>
             ) : null}
-            {magazine.pageCount ? (
+            {magazine.pageCount !== null ? (
               <span className="flex items-center gap-2">
                 <Files className="size-4 shrink-0 text-public-primary" aria-hidden="true" />
                 {magazine.pageCount} pages
@@ -119,9 +135,23 @@ export function PublicMagazineCard({
             ) : null}
           </div>
 
-          <span className="mt-7 inline-flex min-h-11 w-fit max-w-full items-center gap-2 rounded-[var(--public-radius)] bg-public-primary px-5 text-sm font-bold text-white transition-colors group-hover:bg-public-primary-hover">
-            <BookOpenText className="size-4 shrink-0" aria-hidden="true" />
-            View issue
+          <span
+            className={cn(
+              "flex pt-5",
+              featured ? "mt-2" : "mt-auto",
+            )}
+          >
+            <span
+              className={cn(
+                "inline-flex min-h-11 max-w-full items-center justify-center gap-2 rounded-[var(--public-radius)] px-5 text-sm font-bold transition-colors",
+                featured
+                  ? "w-fit bg-public-primary text-white group-hover:bg-public-primary-hover"
+                  : "w-full border border-public-primary/55 bg-public-surface text-public-primary group-hover:border-public-primary group-hover:bg-public-primary-soft",
+              )}
+            >
+              <BookOpenText className="size-4 shrink-0" aria-hidden="true" />
+              View issue
+            </span>
           </span>
         </div>
       </Link>

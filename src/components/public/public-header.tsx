@@ -57,7 +57,7 @@ export function PublicHeader() {
 
   return (
     <header className="relative z-40 border-b border-public-border bg-public-surface shadow-[var(--public-shadow)]">
-      <div className="mx-auto flex h-20 w-full max-w-[1280px] items-center gap-3 px-4 sm:gap-5 sm:px-6 xl:h-24 xl:px-8">
+      <div className="mx-auto flex h-[4.5rem] w-full max-w-[1280px] items-center gap-3 px-4 sm:gap-5 sm:px-6 xl:h-20 xl:px-8">
         <Link
           href="/"
           className="flex min-w-0 shrink items-center gap-2.5 focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-public-primary sm:gap-3"
@@ -82,7 +82,7 @@ export function PublicHeader() {
         </Link>
 
         <nav
-          className="ml-auto hidden h-full items-stretch gap-5 xl:flex 2xl:gap-7"
+          className="ml-auto hidden h-full items-stretch gap-4 xl:flex 2xl:gap-6"
           aria-label="Primary navigation"
         >
           {publicPrimaryNavigation.map((item) => (
@@ -100,10 +100,10 @@ export function PublicHeader() {
             <Search className="size-5" aria-hidden="true" />
           </Link>
           <Link
-            href={publicActionNavigation.donate.href}
+            href={publicActionNavigation.subscribe.href}
             className="hidden h-11 items-center justify-center rounded-[var(--public-radius)] bg-public-primary px-5 text-sm font-bold text-white shadow-sm transition-colors hover:bg-public-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-public-primary sm:inline-flex"
           >
-            Donate
+            Subscribe
           </Link>
           <button
             type="button"
@@ -125,7 +125,7 @@ export function PublicHeader() {
       {mobileOpen ? (
         <div
           id="public-mobile-navigation"
-          className="absolute inset-x-0 top-full max-h-[calc(100vh-5rem)] overflow-y-auto border-t border-public-border bg-public-surface shadow-lg xl:hidden"
+          className="absolute inset-x-0 top-full max-h-[calc(100vh-4.5rem)] overflow-y-auto border-t border-public-border bg-public-surface shadow-lg xl:hidden"
         >
           <nav
             className="mx-auto grid w-full max-w-[1280px] gap-1 px-4 py-4 sm:px-6"
@@ -141,11 +141,11 @@ export function PublicHeader() {
               />
             ))}
             <Link
-              href={publicActionNavigation.donate.href}
+              href={publicActionNavigation.subscribe.href}
               onClick={() => setMobileOpen(false)}
               className="mt-3 inline-flex min-h-11 items-center justify-center rounded-[var(--public-radius)] bg-public-primary px-4 text-sm font-bold text-white transition-colors hover:bg-public-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-public-primary sm:hidden"
             >
-              Donate
+              Subscribe
             </Link>
           </nav>
         </div>

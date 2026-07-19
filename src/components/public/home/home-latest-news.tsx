@@ -17,10 +17,12 @@ export function HomeLatestNews({
   articles,
   className,
 }: HomeLatestNewsProps) {
+  const visibleArticles = articles.slice(0, 5);
+
   return (
     <section
       aria-label="Latest News"
-      className={cn("pb-12 sm:pb-16", className)}
+      className={cn("pb-6 sm:pb-8", className)}
     >
       <PublicContainer>
         <PublicSectionHeading
@@ -33,10 +35,20 @@ export function HomeLatestNews({
           className="[&_h2]:scroll-mt-24"
         />
 
-        {articles.length ? (
-          <div className="mt-6 grid min-w-0 gap-5 md:grid-cols-2 lg:grid-cols-3">
-            {articles.map((article) => (
-              <PublicNewsCard key={article.id} article={article} />
+        {visibleArticles.length ? (
+          <div
+            className={cn(
+              "mt-4 grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-[repeat(auto-fit,minmax(min(100%,18rem),1fr))] xl:grid-cols-[repeat(auto-fit,minmax(min(100%,13rem),1fr))]",
+              visibleArticles.length === 1 && "sm:max-w-sm",
+              visibleArticles.length === 2 && "xl:mx-auto xl:max-w-5xl",
+            )}
+          >
+            {visibleArticles.map((article) => (
+              <PublicNewsCard
+                key={article.id}
+                article={article}
+                variant="compact"
+              />
             ))}
           </div>
         ) : (

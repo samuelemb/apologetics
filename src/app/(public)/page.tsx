@@ -4,7 +4,7 @@ import { connection } from "next/server";
 import { HomeFeaturedNews } from "@/components/public/home/home-featured-news";
 import { HomeHeadlineStrip } from "@/components/public/home/home-headline-strip";
 import { HomeLatestNews } from "@/components/public/home/home-latest-news";
-import { HomeLatestMagazine } from "@/components/public/home/home-latest-magazine";
+import { HomeMoreArticles } from "@/components/public/home/home-more-articles";
 import { HomeUpcomingEvents } from "@/components/public/home/home-upcoming-events";
 import { PublicCard } from "@/components/public/public-card";
 import { PublicContainer } from "@/components/public/public-container";
@@ -19,8 +19,7 @@ export const metadata: Metadata = {
 export default async function HomePage() {
   await connection();
 
-  const { featuredNews, latestNews, upcomingEvents, latestMagazine } =
-    await getPublicHomeData();
+  const { featuredNews, latestNews, upcomingEvents } = await getPublicHomeData();
   const hasPublishedNews = Boolean(featuredNews) || latestNews.length > 0;
   const headlineArticle = latestNews[0] ?? featuredNews;
 
@@ -38,7 +37,7 @@ export default async function HomePage() {
           ) : null}
           <HomeLatestNews
             articles={latestNews}
-            className={featuredNews ? undefined : "pt-8 sm:pt-10 lg:pt-12"}
+            className={featuredNews ? undefined : "pt-5 sm:pt-6 lg:pt-7"}
           />
         </>
       ) : (
@@ -54,9 +53,7 @@ export default async function HomePage() {
         </PublicContainer>
       )}
       <HomeUpcomingEvents events={upcomingEvents} />
-      {latestMagazine ? (
-        <HomeLatestMagazine magazine={latestMagazine} />
-      ) : null}
+      <HomeMoreArticles />
     </main>
   );
 }

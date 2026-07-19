@@ -29,15 +29,15 @@ export function HomeHeadlineStrip({ article }: HomeHeadlineStripProps) {
       aria-label="Latest headline"
       className="border-b border-public-border bg-public-surface"
     >
-      <PublicContainer className="flex min-w-0 flex-col gap-2 py-2.5 sm:flex-row sm:items-center sm:gap-4">
-        <span className="w-fit shrink-0 rounded bg-public-primary px-3 py-1 text-[0.6875rem] font-bold uppercase tracking-wide text-public-primary-foreground">
-          Breaking News
+      <PublicContainer className="flex min-w-0 flex-wrap items-center gap-x-4 gap-y-2 py-2 lg:flex-nowrap">
+        <span className="w-fit shrink-0 rounded bg-public-primary px-3 py-1 text-[0.6875rem] font-bold uppercase tracking-wide text-white">
+          BREAKING NEWS
         </span>
 
         <Link
           href={`/news/${article.slug}`}
           aria-label={`Read headline: ${article.title}`}
-          className="group flex min-w-0 flex-1 items-start gap-3 text-sm text-public-foreground sm:items-center"
+          className="group flex min-w-0 flex-[1_1_18rem] items-start gap-3 text-sm text-public-text sm:items-center"
         >
           <span
             aria-hidden="true"
@@ -49,7 +49,7 @@ export function HomeHeadlineStrip({ article }: HomeHeadlineStripProps) {
         </Link>
 
         {publishedAt ? (
-          <span className="inline-flex shrink-0 items-center gap-2 text-xs text-public-muted-foreground">
+          <span className="ml-auto inline-flex shrink-0 items-center gap-2 text-xs text-public-muted-text">
             <CalendarDays aria-hidden="true" className="size-3.5" />
             <time dateTime={publishedAt.toISOString()}>
               {dateFormatter.format(publishedAt)}

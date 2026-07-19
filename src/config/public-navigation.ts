@@ -8,10 +8,10 @@ export type PublicNavigationLink = {
 export const publicPrimaryNavigation: PublicNavigationLink[] = [
   { label: "Home", href: "/" },
   { label: "News", href: "/news" },
-  { label: "Events", href: "/events" },
   { label: "Magazine", href: "/magazine" },
-  { label: "Resources", href: comingSoonHref("resources") },
-  { label: "About", href: "/about" },
+  { label: "Events", href: "/events" },
+  { label: "About Us", href: "/about" },
+  { label: "Contact Us", href: "/contact" },
 ];
 
 export const publicFooterNavigation = {

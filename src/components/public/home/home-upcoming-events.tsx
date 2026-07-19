@@ -3,12 +3,12 @@ import Link from "next/link";
 
 import { PublicCard } from "@/components/public/public-card";
 import { PublicContainer } from "@/components/public/public-container";
-import type { PublicEvent } from "@/components/public/public-event-card";
+import type { PublicEventCardItem } from "@/components/public/public-event-card";
 import { PublicLinkButton } from "@/components/public/public-link-button";
 import { PublicSectionHeading } from "@/components/public/public-section-heading";
 
 type HomeUpcomingEventsProps = {
-  events: PublicEvent[];
+  events: PublicEventCardItem[];
 };
 
 const monthFormatter = new Intl.DateTimeFormat("en", {

@@ -1,16 +1,29 @@
-import { Clock3, ImageIcon, MapPin } from "lucide-react";
+import { Clock3, MapPin } from "lucide-react";
 import Link from "next/link";
 
 import { PublicCard } from "@/components/public/public-card";
+import { PublicContentImage } from "@/components/public/public-content-image";
 import { cn } from "@/lib/utils";
-import type { getPublicHomeData } from "@/services/public-home.service";
 
-type PublicHomeData = Awaited<ReturnType<typeof getPublicHomeData>>;
-
-export type PublicEvent = PublicHomeData["upcomingEvents"][number];
+export type PublicEventCardItem = {
+  id: string;
+  title: string;
+  slug: string;
+  summary: string | null;
+  coverImageUrl: string | null;
+  coverImageAlt: string | null;
+  startAt: Date;
+  endAt: Date | null;
+  isOnline: boolean;
+  location: string | null;
+  category: {
+    name: string;
+    slug: string;
+  } | null;
+};
 
 type PublicEventCardProps = {
-  event: PublicEvent;
+  event: PublicEventCardItem;
   variant?: "default" | "compact";
   className?: string;
 };
@@ -86,29 +99,22 @@ export function PublicEventCard({
             "relative overflow-hidden border-public-border bg-public-primary-soft",
             compact
               ? "aspect-[16/9] border-b sm:aspect-auto sm:min-h-full sm:border-r sm:border-b-0"
-              : "aspect-[16/10] border-b",
+              : "aspect-[16/9] border-b",
           )}
         >
-          {event.coverImageUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={event.coverImageUrl}
-              alt={event.coverImageAlt?.trim() || event.title}
-              loading="lazy"
-              decoding="async"
-              className="size-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
-            />
-          ) : (
-            <div className="flex size-full items-center justify-center text-public-muted-text">
-              <ImageIcon className="size-9" aria-hidden="true" />
-              <span className="sr-only">No event cover image available</span>
-            </div>
-          )}
+          <PublicContentImage
+            src={event.coverImageUrl}
+            alt={event.coverImageAlt?.trim() || event.title}
+            imageClassName="object-cover transition-transform duration-300 group-hover:scale-[1.02]"
+          />
           {startAt ? (
             <time
               dateTime={startAt.toISOString()}
               aria-label={dateFormatter.format(startAt)}
-              className="absolute top-3 left-3 flex min-w-14 flex-col items-center rounded-[var(--public-radius)] bg-public-surface px-2.5 py-2 text-center shadow-md"
+              className={cn(
+                "absolute left-3 flex min-w-14 flex-col items-center rounded-[var(--public-radius)] bg-public-surface px-2.5 py-2 text-center shadow-md",
+                compact ? "top-3" : "bottom-3",
+              )}
             >
               <span className="text-xs font-bold uppercase tracking-[0.08em] text-public-primary">
                 {monthFormatter.format(startAt)}
@@ -120,7 +126,7 @@ export function PublicEventCard({
           ) : null}
         </div>
 
-        <div className={cn("flex min-w-0 flex-col", compact ? "p-4" : "p-5")}>
+        <div className="flex min-w-0 flex-col p-4">
           {event.category ? (
             <p className="break-words text-xs font-bold uppercase tracking-[0.08em] text-public-primary">
               {event.category.name}

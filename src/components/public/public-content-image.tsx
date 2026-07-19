@@ -1,7 +1,7 @@
 "use client";
 
 import { ImageIcon } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { cn } from "@/lib/utils";
 
@@ -24,13 +24,28 @@ export function PublicContentImage({
   imageClassName,
   fallbackClassName,
 }: PublicContentImageProps) {
+  const normalizedSrc = typeof src === "string" ? src.trim() : "";
+  const imageRef = useRef<HTMLImageElement>(null);
   const [status, setStatus] = useState<ImageStatus>(
-    src ? "loading" : "failed",
+    normalizedSrc ? "loading" : "failed",
   );
 
   useEffect(() => {
-    setStatus(src ? "loading" : "failed");
-  }, [src]);
+    if (!normalizedSrc) {
+      setStatus("failed");
+      return;
+    }
+
+    setStatus("loading");
+
+    const image = imageRef.current;
+
+    if (!image?.complete) {
+      return;
+    }
+
+    setStatus(image.naturalWidth > 0 ? "loaded" : "failed");
+  }, [normalizedSrc]);
 
   return (
     <div
@@ -55,15 +70,25 @@ export function PublicContentImage({
         </div>
       ) : null}
 
-      {src && status !== "failed" ? (
+      {normalizedSrc && status !== "failed" ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
-          src={src}
+          key={normalizedSrc}
+          ref={imageRef}
+          src={normalizedSrc}
           alt={alt}
           loading={loading}
           decoding="async"
-          onLoad={() => setStatus("loaded")}
-          onError={() => setStatus("failed")}
+          onLoad={(event) => {
+            if (event.currentTarget === imageRef.current) {
+              setStatus("loaded");
+            }
+          }}
+          onError={(event) => {
+            if (event.currentTarget === imageRef.current) {
+              setStatus("failed");
+            }
+          }}
           className={cn(
             "absolute inset-0 size-full",
             status === "loaded" ? "opacity-100" : "opacity-0",

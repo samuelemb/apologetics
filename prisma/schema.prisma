@@ -65,6 +65,12 @@ enum ContentType {
   MAGAZINE
 }
 
+enum ContentCommentStatus {
+  PUBLISHED
+  HIDDEN
+  DELETED
+}
+
 enum MediaProvider {
   UPLOADTHING
 }
@@ -102,8 +108,29 @@ model User {
   newsArticles   NewsArticle[]
   emailVerificationCode EmailVerificationCode?
   contentLikes   ContentLike[]
+  contentComments ContentComment[] @relation("ContentCommentAuthor")
 
   @@index([role, status])
+}
+
+model ContentComment {
+  id          String               @id @default(cuid())
+  contentType ContentType
+  contentId   String
+  authorId    String
+  parentId    String?
+  body        String
+  status      ContentCommentStatus @default(PUBLISHED)
+  deletedAt   DateTime?
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+  author      User                 @relation("ContentCommentAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  parent      ContentComment?      @relation("ContentCommentReplies", fields: [parentId], references: [id], onDelete: SetNull)
+  replies     ContentComment[]     @relation("ContentCommentReplies")
+
+  @@index([contentType, contentId, createdAt])
+  @@index([authorId, createdAt])
+  @@index([parentId])
 }
 
 model ContentLike {

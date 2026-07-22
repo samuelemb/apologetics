@@ -8,6 +8,7 @@ import {
   FolderTree,
   LayoutDashboard,
   Mail,
+  MessageCircle,
   Menu,
   Newspaper,
   Settings,
@@ -69,6 +70,7 @@ const navigationGroups: Array<{ label: string; items: NavigationItem[] }> = [
     label: "Engagement",
     items: [
       { label: "Contact Messages", href: "/admin/messages", icon: Mail, section: "messages" },
+      { label: "Comments", href: "/admin/comments", icon: MessageCircle, section: "comments" },
       { label: "Subscribers", href: "/admin/subscribers", icon: UserRoundCheck, section: "subscribers" },
     ],
   },

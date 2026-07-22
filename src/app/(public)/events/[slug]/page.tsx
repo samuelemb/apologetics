@@ -11,12 +11,14 @@ import { EventDetailInformation } from "@/components/public/events/event-detail-
 import { EventRelatedEvents } from "@/components/public/events/event-related-events";
 import { EventViewTracker } from "@/components/public/events/event-view-tracker";
 import { PublicContentLikeButton } from "@/components/public/public-content-like-button";
+import { PublicContentComments } from "@/components/public/public-content-comments";
 import { PublicContainer } from "@/components/public/public-container";
 import { PublicContentImage } from "@/components/public/public-content-image";
 import { PublicLinkButton } from "@/components/public/public-link-button";
 import { ContentType } from "@/generated/prisma/enums";
 import { getCurrentPublicUser } from "@/lib/auth/guards";
 import { getContentLikeSummary } from "@/services/content-like.service";
+import { getPublicContentComments } from "@/services/content-comment.service";
 import {
   getPublicEventBySlug,
   getRelatedPublicEvents,
@@ -145,6 +147,10 @@ export default async function EventDetailPage({
     { contentType: ContentType.EVENT, contentId: event.id },
     currentUser?.id,
   );
+  const comments = await getPublicContentComments(
+    { contentType: ContentType.EVENT, contentId: event.id },
+    currentUser?.id,
+  );
   const now = new Date();
   const status = getEventScheduleStatus(event.startAt, event.endAt, now);
   const coverImageUrl = event.coverImageUrl?.trim() || null;
@@ -206,6 +212,7 @@ export default async function EventDetailPage({
             <section className="mt-8 border-t border-public-border pt-5" aria-label="Event likes">
               <PublicContentLikeButton contentType={ContentType.EVENT} contentId={event.id} initialCount={likeSummary.count} initialLiked={likeSummary.liked} />
             </section>
+            <PublicContentComments contentType={ContentType.EVENT} contentId={event.id} comments={comments} />
 
             <div className="mt-10 border-t border-public-border pt-6">
               <PublicLinkButton href="/events" variant="text" size="sm">

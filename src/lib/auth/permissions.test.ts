@@ -9,6 +9,7 @@ import {
   canEditContent,
   canManageSiteSettings,
   canManageContactMessages,
+  canModerateComments,
   canManageTaxonomy,
   canManageUsers,
   canPublishContent,
@@ -49,6 +50,7 @@ test("only verified active public users can authenticate publicly", () => {
 test("super admins have full management permissions", () => {
   assert.equal(canManageUsers(UserRole.SUPER_ADMIN), true);
   assert.equal(canManageContactMessages(UserRole.SUPER_ADMIN), true);
+  assert.equal(canModerateComments(UserRole.SUPER_ADMIN), true);
   assert.equal(canManageSiteSettings(UserRole.SUPER_ADMIN), true);
   assert.equal(canManageTaxonomy(UserRole.SUPER_ADMIN), true);
   assert.equal(canCreateContent(UserRole.SUPER_ADMIN), true);
@@ -61,6 +63,7 @@ test("super admins have full management permissions", () => {
 test("admins can access Users but can manage only editor and author accounts", () => {
   assert.equal(canManageUsers(UserRole.ADMIN), true);
   assert.equal(canManageContactMessages(UserRole.ADMIN), true);
+  assert.equal(canModerateComments(UserRole.ADMIN), true);
   assert.equal(canManageUsers(UserRole.ADMIN, UserRole.EDITOR), true);
   assert.equal(canManageUsers(UserRole.ADMIN, UserRole.AUTHOR), true);
   assert.equal(canManageUsers(UserRole.ADMIN, UserRole.ADMIN), false);
@@ -73,6 +76,7 @@ test("editors can publish but cannot manage users, settings, or delete content",
   assert.equal(canArchiveContent(UserRole.EDITOR), true);
   assert.equal(canManageUsers(UserRole.EDITOR), false);
   assert.equal(canManageContactMessages(UserRole.EDITOR), false);
+  assert.equal(canModerateComments(UserRole.EDITOR), false);
   assert.equal(canManageSiteSettings(UserRole.EDITOR), false);
   assert.equal(canManageTaxonomy(UserRole.EDITOR), true);
   assert.equal(canDeleteContent(UserRole.EDITOR), false);
@@ -87,6 +91,7 @@ test("authors can create and edit only their own content", () => {
   assert.equal(canDeleteContent(UserRole.AUTHOR), false);
   assert.equal(canManageUsers(UserRole.AUTHOR), false);
   assert.equal(canManageContactMessages(UserRole.AUTHOR), false);
+  assert.equal(canModerateComments(UserRole.AUTHOR), false);
   assert.equal(canManageSiteSettings(UserRole.AUTHOR), false);
   assert.equal(canManageTaxonomy(UserRole.AUTHOR), false);
 });

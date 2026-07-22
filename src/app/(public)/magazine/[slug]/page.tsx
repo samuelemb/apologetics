@@ -10,12 +10,14 @@ import { MagazineIssueInformation } from "@/components/public/magazine/magazine-
 import { MagazineRelatedIssues } from "@/components/public/magazine/magazine-related-issues";
 import { MagazineViewTracker } from "@/components/public/magazine/magazine-view-tracker";
 import { PublicContentLikeButton } from "@/components/public/public-content-like-button";
+import { PublicContentComments } from "@/components/public/public-content-comments";
 import { PublicContainer } from "@/components/public/public-container";
 import { PublicContentImage } from "@/components/public/public-content-image";
 import { PublicLinkButton } from "@/components/public/public-link-button";
 import { ContentType } from "@/generated/prisma/enums";
 import { getCurrentPublicUser } from "@/lib/auth/guards";
 import { getContentLikeSummary } from "@/services/content-like.service";
+import { getPublicContentComments } from "@/services/content-comment.service";
 import {
   getPublicMagazineIssueBySlug,
   getRelatedPublicMagazineIssues,
@@ -143,6 +145,10 @@ export default async function MagazineIssuePage({
     { contentType: ContentType.MAGAZINE, contentId: issue.id },
     currentUser?.id,
   );
+  const comments = await getPublicContentComments(
+    { contentType: ContentType.MAGAZINE, contentId: issue.id },
+    currentUser?.id,
+  );
 
   const coverImageUrl = issue.coverImageUrl?.trim() || null;
   const { headerDescription, bodyDescription } = getDescriptionPlacement(
@@ -207,6 +213,7 @@ export default async function MagazineIssuePage({
                 <section className="mt-7 border-t border-public-border pt-5" aria-label="Magazine issue likes">
                   <PublicContentLikeButton contentType={ContentType.MAGAZINE} contentId={issue.id} initialCount={likeSummary.count} initialLiked={likeSummary.liked} />
                 </section>
+                <PublicContentComments contentType={ContentType.MAGAZINE} contentId={issue.id} comments={comments} />
 
                 {issue.tags.length > 0 ? (
                   <section

@@ -55,6 +55,10 @@ export function canManageContactMessages(role: UserRole): boolean {
   return role === UserRole.SUPER_ADMIN || role === UserRole.ADMIN;
 }
 
+export function canModerateComments(role: UserRole): boolean {
+  return role === UserRole.SUPER_ADMIN || role === UserRole.ADMIN;
+}
+
 export function canManageSiteSettings(role: UserRole): boolean {
   return role === UserRole.SUPER_ADMIN || role === UserRole.ADMIN;
 }
@@ -105,6 +109,7 @@ export type AdminSection =
   | "tags"
   | "users"
   | "messages"
+  | "comments"
   | "subscribers"
   | "settings"
   | "analytics";
@@ -127,6 +132,8 @@ export function canAccessAdminSection(
       return canManageSiteSettings(role);
     case "messages":
       return canManageContactMessages(role);
+    case "comments":
+      return canModerateComments(role);
     case "subscribers":
     case "analytics":
       return role === UserRole.SUPER_ADMIN || role === UserRole.ADMIN;

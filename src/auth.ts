@@ -5,8 +5,16 @@ import type { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 
 import { prisma } from "@/lib/prisma";
-import { isLoginEligible } from "@/lib/auth/permissions";
+import {
+  isLoginEligible,
+  isPublicLoginEligible,
+} from "@/lib/auth/permissions";
 import { credentialsSchema } from "@/schemas/auth";
+import {
+  emailVerificationSchema,
+  publicLoginSchema,
+} from "@/schemas/public-account";
+import { verifyPublicUserEmail } from "@/services/public-account.service";
 
 const INVALID_ACCOUNT_PASSWORD_HASH =
   "$2b$12$bQQXCYjM4ZP6CiV/RYKnSOWKrQFE3Z84aGOLigtzqCGwibTj6cuWS";
@@ -24,6 +32,7 @@ export const authOptions: NextAuthOptions = {
   },
   providers: [
     CredentialsProvider({
+      id: "admin-credentials",
       name: "Admin credentials",
       credentials: {
         email: { label: "Email", type: "email" },
@@ -75,6 +84,92 @@ export const authOptions: NextAuthOptions = {
           role: user.role,
           status: user.status,
         };
+      },
+    }),
+    CredentialsProvider({
+      id: "user-credentials",
+      name: "User credentials",
+      credentials: {
+        email: { label: "Email", type: "email" },
+        password: { label: "Password", type: "password" },
+      },
+      async authorize(credentials) {
+        const parsed = publicLoginSchema.safeParse(credentials);
+
+        if (!parsed.success) {
+          return null;
+        }
+
+        const user = await prisma.user.findUnique({
+          where: { email: parsed.data.email },
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            image: true,
+            passwordHash: true,
+            role: true,
+            status: true,
+            emailVerifiedAt: true,
+          },
+        });
+        const passwordMatches = await compare(
+          parsed.data.password,
+          user?.passwordHash ?? INVALID_ACCOUNT_PASSWORD_HASH,
+        );
+
+        if (
+          !user ||
+          !passwordMatches ||
+          !isPublicLoginEligible(
+            user.status,
+            user.role,
+            user.emailVerifiedAt,
+          )
+        ) {
+          return null;
+        }
+
+        await prisma.user.update({
+          where: { id: user.id },
+          data: { lastLoginAt: new Date() },
+        });
+
+        return {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          image: user.image,
+          role: user.role,
+          status: user.status,
+        };
+      },
+    }),
+    CredentialsProvider({
+      id: "user-verification",
+      name: "User verification",
+      credentials: {
+        email: { label: "Email", type: "email" },
+        code: { label: "Verification code", type: "text" },
+      },
+      async authorize(credentials) {
+        const parsed = emailVerificationSchema.safeParse(credentials);
+
+        if (!parsed.success) {
+          return null;
+        }
+
+        try {
+          const user = await verifyPublicUserEmail(parsed.data);
+          await prisma.user.update({
+            where: { id: user.id },
+            data: { lastLoginAt: new Date() },
+          });
+
+          return user;
+        } catch {
+          return null;
+        }
       },
     }),
   ],

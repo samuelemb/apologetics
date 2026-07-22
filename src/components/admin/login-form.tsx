@@ -34,7 +34,7 @@ export function LoginForm() {
     setAuthenticationError(undefined);
 
     try {
-      const result = await signIn("credentials", {
+      const result = await signIn("admin-credentials", {
         email: values.email,
         password: values.password,
         callbackUrl: "/admin",

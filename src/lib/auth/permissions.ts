@@ -20,6 +20,18 @@ export function isLoginEligible(
   return status === UserStatus.ACTIVE && isAdminRole(role);
 }
 
+export function isPublicLoginEligible(
+  status: UserStatus,
+  role: UserRole,
+  emailVerifiedAt: Date | null,
+): boolean {
+  return (
+    status === UserStatus.ACTIVE &&
+    role === UserRole.USER &&
+    emailVerifiedAt instanceof Date
+  );
+}
+
 export function canManageUsers(
   role: UserRole,
   targetRole?: UserRole,

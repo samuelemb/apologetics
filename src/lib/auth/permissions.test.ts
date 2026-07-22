@@ -13,6 +13,7 @@ import {
   canManageUsers,
   canPublishContent,
   isLoginEligible,
+  isPublicLoginEligible,
 } from "@/lib/auth/permissions";
 
 test("only active users are eligible to authenticate", () => {
@@ -26,6 +27,21 @@ test("only active users are eligible to authenticate", () => {
   );
   assert.equal(
     isLoginEligible(UserStatus.INVITED, UserRole.EDITOR),
+    false,
+  );
+});
+
+test("only verified active public users can authenticate publicly", () => {
+  assert.equal(
+    isPublicLoginEligible(UserStatus.ACTIVE, UserRole.USER, new Date()),
+    true,
+  );
+  assert.equal(
+    isPublicLoginEligible(UserStatus.PENDING_VERIFICATION, UserRole.USER, null),
+    false,
+  );
+  assert.equal(
+    isPublicLoginEligible(UserStatus.ACTIVE, UserRole.AUTHOR, new Date()),
     false,
   );
 });

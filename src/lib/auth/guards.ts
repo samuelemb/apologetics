@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 
 import { authOptions } from "@/auth";
 import type { UserRole } from "@/generated/prisma/enums";
-import { isLoginEligible } from "@/lib/auth/permissions";
+import { isLoginEligible, isPublicLoginEligible } from "@/lib/auth/permissions";
 import { prisma } from "@/lib/prisma";
 
 export class AuthorizationError extends Error {
@@ -52,6 +52,40 @@ export async function requireRoles(...roles: UserRole[]) {
 
   if (!roles.includes(user.role)) {
     throw new AuthorizationError();
+  }
+
+  return user;
+}
+
+export async function getCurrentPublicUser() {
+  const session = await getServerSession(authOptions);
+
+  if (!session?.user?.id) {
+    return null;
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      role: true,
+      status: true,
+      emailVerifiedAt: true,
+    },
+  });
+
+  return user && isPublicLoginEligible(user.status, user.role, user.emailVerifiedAt)
+    ? user
+    : null;
+}
+
+export async function requirePublicUser() {
+  const user = await getCurrentPublicUser();
+
+  if (!user) {
+    redirect("/login");
   }
 
   return user;

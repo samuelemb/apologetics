@@ -5,8 +5,10 @@ import { ZodError } from "zod";
 import {
   registerPublicUser,
   resendPublicVerification,
+  updatePublicUserProfile,
   PublicAccountError,
 } from "@/services/public-account.service";
+import { requirePublicUser } from "@/lib/auth/guards";
 
 export type PublicAccountActionState = {
   status: "idle" | "success" | "error";
@@ -69,6 +71,25 @@ export async function resendVerificationAction(
       status: "success",
       email,
       message: "We sent a new verification code.",
+    };
+  } catch (error) {
+    return actionError(error);
+  }
+}
+
+export async function updatePublicProfileAction(
+  _previousState: PublicAccountActionState,
+  formData: FormData,
+): Promise<PublicAccountActionState> {
+  try {
+    const user = await requirePublicUser();
+    const updated = await updatePublicUserProfile(user.id, {
+      name: String(formData.get("name") ?? ""),
+    });
+    return {
+      status: "success",
+      message: "Your display name has been updated.",
+      email: updated.name,
     };
   } catch (error) {
     return actionError(error);

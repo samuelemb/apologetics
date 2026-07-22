@@ -3,6 +3,7 @@ import test from "node:test";
 
 import {
   emailVerificationSchema,
+  publicProfileSchema,
   publicRegistrationSchema,
 } from "@/schemas/public-account";
 
@@ -15,6 +16,11 @@ test("public registration normalizes email and enforces password requirements", 
   });
 
   assert.equal(result.email, "reader@example.test");
+});
+
+test("public profile updates require a valid display name", () => {
+  assert.equal(publicProfileSchema.safeParse({ name: "Updated Reader" }).success, true);
+  assert.equal(publicProfileSchema.safeParse({ name: " " }).success, false);
 });
 
 test("public registration rejects mismatched or weak passwords", () => {

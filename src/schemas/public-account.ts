@@ -49,6 +49,15 @@ export const resendVerificationSchema = z.object({
   email: normalizedEmailSchema,
 });
 
+export const publicProfileSchema = z.object({
+  name: z
+    .string()
+    .trim()
+    .min(2, "Name must be at least 2 characters.")
+    .max(120, "Name must be 120 characters or fewer."),
+});
+
 export type PublicRegistrationInput = z.infer<typeof publicRegistrationSchema>;
 export type PublicLoginInput = z.infer<typeof publicLoginSchema>;
 export type EmailVerificationInput = z.infer<typeof emailVerificationSchema>;
+export type PublicProfileInput = z.infer<typeof publicProfileSchema>;

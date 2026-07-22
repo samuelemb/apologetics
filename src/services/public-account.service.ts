@@ -11,7 +11,9 @@ import {
   emailVerificationSchema,
   publicRegistrationSchema,
   resendVerificationSchema,
+  publicProfileSchema,
   type EmailVerificationInput,
+  type PublicProfileInput,
   type PublicRegistrationInput,
 } from "@/schemas/public-account";
 
@@ -256,4 +258,53 @@ export async function verifyPublicUserEmail(input: EmailVerificationInput) {
   }
 
   return result.user;
+}
+
+export async function updatePublicUserProfile(
+  userId: string,
+  input: PublicProfileInput,
+) {
+  const parsed = publicProfileSchema.parse(input);
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      id: true,
+      name: true,
+      role: true,
+      status: true,
+      emailVerifiedAt: true,
+    },
+  });
+
+  if (
+    !user ||
+    user.role !== UserRole.USER ||
+    user.status !== UserStatus.ACTIVE ||
+    !user.emailVerifiedAt
+  ) {
+    throw new PublicAccountError(
+      "NOT_PENDING_VERIFICATION",
+      "Your account is not available for profile updates.",
+    );
+  }
+
+  const updated = await prisma.user.update({
+    where: { id: user.id },
+    data: { name: parsed.name },
+    select: { id: true, name: true },
+  });
+
+  if (updated.name !== user.name) {
+    await prisma.auditLog.create({
+      data: {
+        userId: updated.id,
+        action: "USER_PROFILE_UPDATED",
+        entityType: "User",
+        entityId: updated.id,
+        metadata: { changedFields: ["name"] },
+      },
+    });
+  }
+
+  return updated;
 }

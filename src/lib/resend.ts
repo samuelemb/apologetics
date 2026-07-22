@@ -30,6 +30,7 @@ export async function sendVerificationEmail({
     headers: {
       Authorization: `Bearer ${apiKey}`,
       "Content-Type": "application/json",
+      "User-Agent": "apologetics-web/1.0",
     },
     body: JSON.stringify({
       from,

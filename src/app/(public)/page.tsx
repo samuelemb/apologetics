@@ -8,6 +8,7 @@ import { HomeMoreArticles } from "@/components/public/home/home-more-articles";
 import { HomeUpcomingEvents } from "@/components/public/home/home-upcoming-events";
 import { PublicCard } from "@/components/public/public-card";
 import { PublicContainer } from "@/components/public/public-container";
+import { getCurrentPublicUser } from "@/lib/auth/guards";
 import { getPublicHomeData } from "@/services/public-home.service";
 
 export const metadata: Metadata = {
@@ -19,7 +20,8 @@ export const metadata: Metadata = {
 export default async function HomePage() {
   await connection();
 
-  const { featuredNews, latestNews, upcomingEvents } = await getPublicHomeData();
+  const currentUser = await getCurrentPublicUser();
+  const { featuredNews, latestNews, upcomingEvents } = await getPublicHomeData(currentUser?.id);
   const hasPublishedNews = Boolean(featuredNews) || latestNews.length > 0;
   const headlineArticle = latestNews[0] ?? featuredNews;
 

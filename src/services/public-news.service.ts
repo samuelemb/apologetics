@@ -1,8 +1,12 @@
 import "server-only";
 
 import type { Prisma } from "@/generated/prisma/client";
-import { CategoryType, ContentStatus } from "@/generated/prisma/enums";
+import { CategoryType, ContentStatus, ContentType } from "@/generated/prisma/enums";
 import { prisma } from "@/lib/prisma";
+import {
+  attachContentEngagement,
+  type ContentEngagementSummary,
+} from "@/services/content-engagement.service";
 
 const DEFAULT_LIMIT = 9;
 const MAX_LIMIT = 24;
@@ -41,9 +45,10 @@ export type ListPublicNewsInput = {
   limit?: number;
 };
 
-export type PublicNewsArticle = Prisma.NewsArticleGetPayload<{
+type PublicNewsArticleBase = Prisma.NewsArticleGetPayload<{
   select: typeof publicNewsArticleSelect;
 }>;
+export type PublicNewsArticle = PublicNewsArticleBase & ContentEngagementSummary;
 
 export type PublicNewsCategory = Prisma.CategoryGetPayload<{
   select: typeof publicNewsCategorySelect;
@@ -120,7 +125,7 @@ function decodeCursor(cursor: string | undefined): DecodedNewsCursor | null {
   }
 }
 
-function encodeCursor(article: PublicNewsArticle) {
+function encodeCursor(article: PublicNewsArticleBase) {
   if (!article.publishedAt) {
     return null;
   }
@@ -135,6 +140,7 @@ function encodeCursor(article: PublicNewsArticle) {
 
 export async function listPublicNews(
   input: ListPublicNewsInput = {},
+  currentUserId?: string | null,
 ): Promise<ListPublicNewsResult> {
   const now = new Date();
   const limit = normalizeLimit(input.limit);
@@ -183,9 +189,14 @@ export async function listPublicNews(
   const hasMore = articles.length > limit;
   const pageArticles = hasMore ? articles.slice(0, limit) : articles;
   const lastArticle = pageArticles[pageArticles.length - 1];
+  const articlesWithEngagement = await attachContentEngagement(
+    ContentType.NEWS,
+    pageArticles,
+    currentUserId,
+  );
 
   return {
-    articles: pageArticles,
+    articles: articlesWithEngagement,
     nextCursor:
       hasMore && lastArticle ? encodeCursor(lastArticle) : null,
     hasMore,

@@ -59,6 +59,11 @@ function isNewsArticle(value: unknown): value is PublicNewsCardArticle {
     isNullableString(value.publishedAt) &&
     typeof value.viewCount === "number" &&
     Number.isFinite(value.viewCount) &&
+    typeof value.likeCount === "number" &&
+    Number.isFinite(value.likeCount) &&
+    typeof value.commentCount === "number" &&
+    Number.isFinite(value.commentCount) &&
+    typeof value.liked === "boolean" &&
     isAuthor(value.author) &&
     isCategory(value.category)
   );

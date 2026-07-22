@@ -79,10 +79,24 @@ export async function createContentComment(actor: PublicActor, input: unknown) {
   return prisma.$transaction(async (transaction) => {
     const comment = await transaction.contentComment.create({
       data: { authorId: actor.id, contentType: parsed.contentType, contentId: parsed.contentId, parentId: parsed.parentId, body: parsed.body },
-      select: { id: true },
+      select: {
+        id: true,
+        parentId: true,
+        body: true,
+        status: true,
+        createdAt: true,
+        updatedAt: true,
+        author: { select: { id: true, name: true } },
+        _count: { select: { replies: true } },
+      },
     });
     await transaction.auditLog.create({ data: { userId: actor.id, action: "COMMENT_CREATED", entityType: "ContentComment", entityId: comment.id } });
-    return comment;
+    const { _count, ...createdComment } = comment;
+    return {
+      ...createdComment,
+      isOwner: true,
+      replyCount: _count.replies,
+    } satisfies PublicContentComment;
   });
 }
 

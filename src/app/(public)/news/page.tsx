@@ -6,6 +6,7 @@ import { NewsFeed } from "@/components/public/news/news-feed";
 import { NewsListingEmptyState } from "@/components/public/news/news-listing-empty-state";
 import { PublicContainer } from "@/components/public/public-container";
 import { PublicSectionHeading } from "@/components/public/public-section-heading";
+import { getCurrentPublicUser } from "@/lib/auth/guards";
 import {
   listPublicNews,
   listPublicNewsCategories,
@@ -30,13 +31,14 @@ export default async function NewsPage({ searchParams }: NewsPageProps) {
   const categoryValue = Array.isArray(category) ? category[0] : category;
   const selectedCategorySlug = categoryValue?.trim() || undefined;
 
-  const [newsResult, categories] = await Promise.all([
-    listPublicNews({
+  const [categories, currentUser] = await Promise.all([
+    listPublicNewsCategories(),
+    getCurrentPublicUser(),
+  ]);
+  const newsResult = await listPublicNews({
       categorySlug: selectedCategorySlug,
       limit: 9,
-    }),
-    listPublicNewsCategories(),
-  ]);
+    }, currentUser?.id);
 
   return (
     <main className="min-w-0 flex-1 bg-public-background">

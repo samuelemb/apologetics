@@ -3,15 +3,19 @@ import Link from "next/link";
 
 import { PublicCard } from "@/components/public/public-card";
 import { PublicContentImage } from "@/components/public/public-content-image";
+import { PublicNewsEngagement } from "@/components/public/news/public-news-engagement";
 import { cn } from "@/lib/utils";
 import type { PublicNewsArticle as ServicePublicNewsArticle } from "@/services/public-news.service";
 
 export type PublicNewsArticle = ServicePublicNewsArticle;
 export type PublicNewsCardArticle = Omit<
   PublicNewsArticle,
-  "publishedAt"
+  "publishedAt" | "likeCount" | "commentCount" | "liked"
 > & {
   publishedAt: Date | string | null;
+  likeCount?: number;
+  commentCount?: number;
+  liked?: boolean;
 };
 
 type PublicNewsCardProps = {
@@ -42,11 +46,11 @@ export function PublicNewsCard({
   const publishedAt = normalizePublishedAt(article.publishedAt);
 
   return (
-    <PublicCard interactive className={cn("h-full", className)}>
+    <PublicCard interactive className={cn("flex h-full flex-col", className)}>
       <Link
         href={`/news/${article.slug}`}
         aria-label={`Read article: ${article.title}`}
-        className="group flex h-full min-w-0 flex-col focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-public-primary"
+        className="group flex min-h-0 min-w-0 flex-1 flex-col focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-public-primary"
       >
         <div
           className={cn(
@@ -118,6 +122,17 @@ export function PublicNewsCard({
           ) : null}
         </div>
       </Link>
+      {typeof article.likeCount === "number" && typeof article.commentCount === "number" && typeof article.liked === "boolean" ? (
+        <PublicNewsEngagement
+          articleId={article.id}
+          slug={article.slug}
+          title={article.title}
+          initialLikeCount={article.likeCount}
+          initialLiked={article.liked}
+          commentCount={article.commentCount}
+          compact={compact}
+        />
+      ) : null}
     </PublicCard>
   );
 }

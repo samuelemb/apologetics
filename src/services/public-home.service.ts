@@ -1,8 +1,9 @@
 import "server-only";
 
 import type { Prisma } from "@/generated/prisma/client";
-import { ContentStatus, EventStatus } from "@/generated/prisma/enums";
+import { ContentStatus, ContentType, EventStatus } from "@/generated/prisma/enums";
 import { prisma } from "@/lib/prisma";
+import { attachContentEngagement } from "@/services/content-engagement.service";
 
 const newsSelect = {
   id: true,
@@ -66,7 +67,7 @@ const magazineSelect = {
   },
 } satisfies Prisma.MagazineIssueSelect;
 
-export async function getPublicHomeData() {
+export async function getPublicHomeData(currentUserId?: string | null) {
   const now = new Date();
   const publishedNewsWhere = {
     status: ContentStatus.PUBLISHED,
@@ -115,9 +116,18 @@ export async function getPublicHomeData() {
     select: newsSelect,
   });
 
+  const newsWithEngagement = await attachContentEngagement(
+    ContentType.NEWS,
+    [...(featuredNews ? [featuredNews] : []), ...latestNews],
+    currentUserId,
+  );
+  const engagementById = new Map(
+    newsWithEngagement.map((article) => [article.id, article]),
+  );
+
   return {
-    featuredNews,
-    latestNews,
+    featuredNews: featuredNews ? engagementById.get(featuredNews.id)! : null,
+    latestNews: latestNews.map((article) => engagementById.get(article.id)!),
     upcomingEvents,
     latestMagazine,
   };

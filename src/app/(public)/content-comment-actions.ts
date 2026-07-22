@@ -6,18 +6,21 @@ import { getCurrentPublicUser, requireAdmin } from "@/lib/auth/guards";
 import { ContentCommentError, createContentComment, deleteOwnContentComment, editContentComment, getPublicContentCommentReplies, getPublicContentComments, moderateContentComment } from "@/services/content-comment.service";
 
 export type ContentCommentActionResult = { ok: true } | { ok: false; message: string };
+type CreateContentCommentActionResult =
+  | { ok: true; comment: Awaited<ReturnType<typeof createContentComment>> }
+  | { ok: false; message: string };
 type ContentCommentPageActionResult =
   | { ok: true; page: Awaited<ReturnType<typeof getPublicContentComments>> }
   | { ok: false; message: string };
 
-function resultError(error: unknown): ContentCommentActionResult {
+function resultError(error: unknown): { ok: false; message: string } {
   return { ok: false, message: error instanceof ContentCommentError ? error.message : "Unable to update the comment. Please try again." };
 }
 
-export async function createContentCommentAction(input: unknown): Promise<ContentCommentActionResult> {
+export async function createContentCommentAction(input: unknown): Promise<CreateContentCommentActionResult> {
   const user = await getCurrentPublicUser();
   if (!user) return { ok: false, message: "Sign in to comment." };
-  try { await createContentComment(user, input); return { ok: true }; } catch (error) { return resultError(error); }
+  try { return { ok: true, comment: await createContentComment(user, input) }; } catch (error) { return resultError(error); }
 }
 
 export async function editContentCommentAction(input: unknown): Promise<ContentCommentActionResult> {

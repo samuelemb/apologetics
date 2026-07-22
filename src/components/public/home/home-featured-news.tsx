@@ -4,6 +4,7 @@ import Link from "next/link";
 import { PublicCard } from "@/components/public/public-card";
 import { PublicContentImage } from "@/components/public/public-content-image";
 import { PublicContainer } from "@/components/public/public-container";
+import { PublicNewsEngagement } from "@/components/public/news/public-news-engagement";
 import type { PublicNewsArticle } from "@/components/public/public-news-card";
 
 type HomeFeaturedNewsProps = {
@@ -91,6 +92,14 @@ export function HomeFeaturedNews({ article }: HomeFeaturedNewsProps) {
               </span>
             </div>
           </Link>
+          <PublicNewsEngagement
+            articleId={article.id}
+            slug={article.slug}
+            title={article.title}
+            initialLikeCount={article.likeCount}
+            initialLiked={article.liked}
+            commentCount={article.commentCount}
+          />
         </PublicCard>
       </PublicContainer>
     </section>

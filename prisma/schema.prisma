@@ -129,6 +129,7 @@ model ContentComment {
   replies     ContentComment[]     @relation("ContentCommentReplies")
 
   @@index([contentType, contentId, createdAt])
+  @@index([contentType, contentId, parentId, createdAt])
   @@index([authorId, createdAt])
   @@index([parentId])
 }

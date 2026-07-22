@@ -15,11 +15,24 @@ import {
 
 export class ContentLikeError extends Error {
   constructor(
-    public readonly code: "FORBIDDEN" | "NOT_FOUND",
+    public readonly code: "FORBIDDEN" | "NOT_FOUND" | "RATE_LIMITED",
     message: string,
   ) {
     super(message);
     this.name = "ContentLikeError";
+  }
+}
+
+async function assertLikeRateLimit(userId: string) {
+  const count = await prisma.auditLog.count({
+    where: {
+      userId,
+      action: "CONTENT_LIKE_TOGGLED",
+      createdAt: { gte: new Date(Date.now() - 60_000) },
+    },
+  });
+  if (count >= 30) {
+    throw new ContentLikeError("RATE_LIMITED", "Too many requests. Please wait a moment.");
   }
 }
 
@@ -106,6 +119,7 @@ export async function toggleContentLike(
   }
 
   await assertPublishedContent(parsed);
+  await assertLikeRateLimit(userId);
 
   return prisma.$transaction(async (transaction) => {
     const existing = await transaction.contentLike.findUnique({
@@ -137,6 +151,15 @@ export async function toggleContentLike(
 
     const count = await transaction.contentLike.count({
       where: { contentType: parsed.contentType, contentId: parsed.contentId },
+    });
+
+    await transaction.auditLog.create({
+      data: {
+        userId,
+        action: "CONTENT_LIKE_TOGGLED",
+        entityType: "Content",
+        entityId: `${parsed.contentType}:${parsed.contentId}`,
+      },
     });
 
     return { liked: !existing, count };

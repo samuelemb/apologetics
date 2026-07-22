@@ -212,7 +212,7 @@ export default async function EventDetailPage({
             <section className="mt-8 border-t border-public-border pt-5" aria-label="Event likes">
               <PublicContentLikeButton contentType={ContentType.EVENT} contentId={event.id} initialCount={likeSummary.count} initialLiked={likeSummary.liked} />
             </section>
-            <PublicContentComments contentType={ContentType.EVENT} contentId={event.id} comments={comments} />
+            <PublicContentComments contentType={ContentType.EVENT} contentId={event.id} {...comments} />
 
             <div className="mt-10 border-t border-public-border pt-6">
               <PublicLinkButton href="/events" variant="text" size="sm">

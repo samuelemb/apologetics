@@ -187,7 +187,7 @@ export default async function NewsArticlePage({
             <section className="mt-8 border-t border-public-border pt-5" aria-label="Article likes">
               <PublicContentLikeButton contentType={ContentType.NEWS} contentId={article.id} initialCount={likeSummary.count} initialLiked={likeSummary.liked} />
             </section>
-            <PublicContentComments contentType={ContentType.NEWS} contentId={article.id} comments={comments} />
+            <PublicContentComments contentType={ContentType.NEWS} contentId={article.id} {...comments} />
           </article>
         </div>
       </PublicContainer>

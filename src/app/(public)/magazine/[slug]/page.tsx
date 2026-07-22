@@ -213,7 +213,7 @@ export default async function MagazineIssuePage({
                 <section className="mt-7 border-t border-public-border pt-5" aria-label="Magazine issue likes">
                   <PublicContentLikeButton contentType={ContentType.MAGAZINE} contentId={issue.id} initialCount={likeSummary.count} initialLiked={likeSummary.liked} />
                 </section>
-                <PublicContentComments contentType={ContentType.MAGAZINE} contentId={issue.id} comments={comments} />
+                <PublicContentComments contentType={ContentType.MAGAZINE} contentId={issue.id} {...comments} />
 
                 {issue.tags.length > 0 ? (
                   <section

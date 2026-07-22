@@ -7,7 +7,7 @@
     "build": "node scripts/next-build.cjs",
     "start": "next start",
     "lint": "eslint",
-    "test:auth": "tsx --test src/schemas/auth.test.ts src/schemas/public-account.test.ts src/lib/auth/permissions.test.ts",
+    "test:auth": "tsx --test src/schemas/auth.test.ts src/schemas/public-account.test.ts src/schemas/content-like.test.ts src/lib/auth/permissions.test.ts",
     "test:news": "tsx --test src/schemas/news.test.ts src/lib/news-policy.test.ts",
     "test:event": "tsx --env-file=.env --conditions=react-server --test --test-concurrency=1 src/schemas/event.test.ts src/lib/event-policy.test.ts src/services/event.service.test.ts",
     "test:magazine": "tsx --env-file=.env --conditions=react-server --test --test-concurrency=1 src/schemas/magazine.test.ts src/lib/magazine-policy.test.ts src/services/magazine.service.test.ts",

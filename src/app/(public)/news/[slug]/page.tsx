@@ -8,7 +8,11 @@ import { NewsArticleBody } from "@/components/public/news/news-article-body";
 import { NewsArticleHeader } from "@/components/public/news/news-article-header";
 import { NewsRelatedArticles } from "@/components/public/news/news-related-articles";
 import { NewsViewTracker } from "@/components/public/news/news-view-tracker";
+import { PublicContentLikeButton } from "@/components/public/public-content-like-button";
 import { PublicContainer } from "@/components/public/public-container";
+import { ContentType } from "@/generated/prisma/enums";
+import { getCurrentPublicUser } from "@/lib/auth/guards";
+import { getContentLikeSummary } from "@/services/content-like.service";
 import {
   getPublicNewsArticleBySlug,
   getRelatedPublicNewsArticles,
@@ -108,11 +112,18 @@ export default async function NewsArticlePage({
     notFound();
   }
 
-  const relatedArticles = await getRelatedPublicNewsArticles({
+  const [relatedArticles, currentUser] = await Promise.all([
+    getRelatedPublicNewsArticles({
     articleId: article.id,
     categorySlug: article.category?.slug,
     tagSlugs: article.tags.map((tag) => tag.slug),
-  });
+    }),
+    getCurrentPublicUser(),
+  ]);
+  const likeSummary = await getContentLikeSummary(
+    { contentType: ContentType.NEWS, contentId: article.id },
+    currentUser?.id,
+  );
 
   return (
     <main className="min-w-0 flex-1 bg-public-background">
@@ -167,6 +178,9 @@ export default async function NewsArticlePage({
             ) : null}
 
             <NewsArticleBody content={article.content} tags={article.tags} />
+            <section className="mt-8 border-t border-public-border pt-5" aria-label="Article likes">
+              <PublicContentLikeButton contentType={ContentType.NEWS} contentId={article.id} initialCount={likeSummary.count} initialLiked={likeSummary.liked} />
+            </section>
           </article>
         </div>
       </PublicContainer>

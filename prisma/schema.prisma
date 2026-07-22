@@ -101,8 +101,20 @@ model User {
   mediaAssets    MediaAsset[]
   newsArticles   NewsArticle[]
   emailVerificationCode EmailVerificationCode?
+  contentLikes   ContentLike[]
 
   @@index([role, status])
+}
+
+model ContentLike {
+  userId      String
+  contentType ContentType
+  contentId   String
+  createdAt   DateTime    @default(now())
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, contentType, contentId])
+  @@index([contentType, contentId])
 }
 
 model EmailVerificationCode {

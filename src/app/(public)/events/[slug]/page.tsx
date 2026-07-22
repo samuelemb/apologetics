@@ -10,9 +10,13 @@ import type { EventScheduleStatus } from "@/components/public/events/event-detai
 import { EventDetailInformation } from "@/components/public/events/event-detail-information";
 import { EventRelatedEvents } from "@/components/public/events/event-related-events";
 import { EventViewTracker } from "@/components/public/events/event-view-tracker";
+import { PublicContentLikeButton } from "@/components/public/public-content-like-button";
 import { PublicContainer } from "@/components/public/public-container";
 import { PublicContentImage } from "@/components/public/public-content-image";
 import { PublicLinkButton } from "@/components/public/public-link-button";
+import { ContentType } from "@/generated/prisma/enums";
+import { getCurrentPublicUser } from "@/lib/auth/guards";
+import { getContentLikeSummary } from "@/services/content-like.service";
 import {
   getPublicEventBySlug,
   getRelatedPublicEvents,
@@ -133,7 +137,14 @@ export default async function EventDetailPage({
     notFound();
   }
 
-  const relatedEvents = await getRelatedPublicEvents(event);
+  const [relatedEvents, currentUser] = await Promise.all([
+    getRelatedPublicEvents(event),
+    getCurrentPublicUser(),
+  ]);
+  const likeSummary = await getContentLikeSummary(
+    { contentType: ContentType.EVENT, contentId: event.id },
+    currentUser?.id,
+  );
   const now = new Date();
   const status = getEventScheduleStatus(event.startAt, event.endAt, now);
   const coverImageUrl = event.coverImageUrl?.trim() || null;
@@ -191,6 +202,10 @@ export default async function EventDetailPage({
 
             <EventDetailInformation event={event} status={status} now={now} />
             <EventDetailBody content={event.content} tags={event.tags} />
+
+            <section className="mt-8 border-t border-public-border pt-5" aria-label="Event likes">
+              <PublicContentLikeButton contentType={ContentType.EVENT} contentId={event.id} initialCount={likeSummary.count} initialLiked={likeSummary.liked} />
+            </section>
 
             <div className="mt-10 border-t border-public-border pt-6">
               <PublicLinkButton href="/events" variant="text" size="sm">

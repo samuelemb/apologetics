@@ -108,15 +108,8 @@ export function PublicHeader() {
           ) : status !== "authenticated" ? (
             <div className="hidden items-center gap-3 sm:flex">
               <Link href="/login" className="text-sm font-bold text-public-muted-text transition-colors hover:text-public-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-public-primary">Sign in</Link>
-              <Link href="/signup" className="inline-flex h-11 items-center justify-center rounded-[var(--public-radius)] bg-public-primary px-5 text-sm font-bold text-white shadow-sm transition-colors hover:bg-public-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-public-primary">Sign up</Link>
             </div>
           ) : null}
-          <Link
-            href={publicActionNavigation.subscribe.href}
-            className="hidden h-11 items-center justify-center rounded-[var(--public-radius)] bg-public-primary px-5 text-sm font-bold text-white shadow-sm transition-colors hover:bg-public-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-public-primary sm:inline-flex"
-          >
-            Subscribe
-          </Link>
           <button
             type="button"
             className="inline-flex size-11 items-center justify-center rounded-[var(--public-radius)] border border-public-border bg-public-surface text-public-text transition-colors hover:bg-public-primary-soft hover:text-public-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-public-primary xl:hidden"
@@ -152,17 +145,10 @@ export function PublicHeader() {
                 mobile
               />
             ))}
-            <Link
-              href={publicActionNavigation.subscribe.href}
-              onClick={() => setMobileOpen(false)}
-              className="mt-3 inline-flex min-h-11 items-center justify-center rounded-[var(--public-radius)] bg-public-primary px-4 text-sm font-bold text-white transition-colors hover:bg-public-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-public-primary sm:hidden"
-            >
-              Subscribe
-            </Link>
             {isPublicUser ? (
               <div className="mt-3 grid gap-2"><Link href="/account" onClick={() => setMobileOpen(false)} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-[var(--public-radius)] border border-public-border px-4 text-sm font-bold text-public-text"><CircleUserRound className="size-4" aria-hidden="true" />Account</Link><button type="button" onClick={() => { setMobileOpen(false); signOut({ callbackUrl: "/" }); }} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-[var(--public-radius)] border border-public-border px-4 text-sm font-bold text-public-text transition-colors hover:bg-public-primary-soft hover:text-public-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-public-primary"><LogOut className="size-4" aria-hidden="true" />Sign out</button></div>
             ) : status !== "authenticated" ? (
-              <div className="mt-3 grid grid-cols-2 gap-2 sm:hidden"><Link href="/login" onClick={() => setMobileOpen(false)} className="inline-flex min-h-11 items-center justify-center rounded-[var(--public-radius)] border border-public-border px-4 text-sm font-bold text-public-text">Sign in</Link><Link href="/signup" onClick={() => setMobileOpen(false)} className="inline-flex min-h-11 items-center justify-center rounded-[var(--public-radius)] bg-public-primary px-4 text-sm font-bold text-white">Sign up</Link></div>
+              <Link href="/login" onClick={() => setMobileOpen(false)} className="mt-3 inline-flex min-h-11 items-center justify-center rounded-[var(--public-radius)] border border-public-border px-4 text-sm font-bold text-public-text sm:hidden">Sign in</Link>
             ) : null}
           </nav>
         </div>

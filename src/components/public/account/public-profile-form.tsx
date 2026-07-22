@@ -3,9 +3,9 @@
 import { useActionState } from "react";
 
 import {
-  initialPublicAccountActionState,
   updatePublicProfileAction,
 } from "@/app/(public)/account-actions";
+import { initialPublicAccountActionState } from "@/lib/public-account-action-state";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 

@@ -5,11 +5,11 @@ import { useRouter } from "next/navigation";
 import { useActionState, useEffect } from "react";
 
 import {
-  initialPublicAccountActionState,
   registerPublicUserAction,
 } from "@/app/(public)/account-actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { initialPublicAccountActionState } from "@/lib/public-account-action-state";
 
 export function PublicSignupForm() {
   const router = useRouter();

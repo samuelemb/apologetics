@@ -7,6 +7,7 @@ import { hash } from "bcryptjs";
 import { UserRole, UserStatus } from "@/generated/prisma/enums";
 import { EmailDeliveryError, sendPasswordResetEmail, sendVerificationEmail } from "@/lib/resend";
 import { prisma } from "@/lib/prisma";
+import { finalizeOrphanedMediaAsset } from "@/services/media.service";
 import {
   emailVerificationSchema,
   publicRegistrationSchema,
@@ -355,6 +356,17 @@ export async function updatePublicUserProfile(
       where: { id: newImageAssetId, status: "PENDING" },
       data: { status: "ATTACHED", attachedAt: new Date() },
     });
+  }
+
+  if (parsed.image !== undefined && user.image && user.image !== parsed.image) {
+    const previousAsset = await prisma.mediaAsset.findFirst({
+      where: { url: user.image, uploadedById: user.id, kind: "PROFILE_AVATAR", status: "ATTACHED" },
+      select: { id: true },
+    });
+    if (previousAsset) {
+      await prisma.mediaAsset.update({ where: { id: previousAsset.id }, data: { status: "ORPHANED" } });
+      await finalizeOrphanedMediaAsset(previousAsset.id, { actorId: user.id, successAction: "PROFILE_AVATAR_REMOVED" }).catch(() => false);
+    }
   }
 
   return updated;

@@ -1,5 +1,7 @@
 "use client";
 
+/* eslint-disable react/no-unescaped-entities */
+
 import { LoaderCircle, PencilLine, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import { signIn } from "next-auth/react";

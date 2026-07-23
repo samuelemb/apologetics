@@ -80,10 +80,15 @@ export async function updatePublicProfileAction(
     const user = await requirePublicUser();
     const updated = await updatePublicUserProfile(user.id, {
       name: String(formData.get("name") ?? ""),
+      username: String(formData.get("username") ?? ""),
+      bio: String(formData.get("bio") ?? ""),
+      location: String(formData.get("location") ?? ""),
+      timezone: String(formData.get("timezone") ?? ""),
+      image: String(formData.get("image") ?? "") || null,
     });
     return {
       status: "success",
-      message: "Your display name has been updated.",
+      message: "Your profile has been updated.",
       email: updated.name,
     };
   } catch (error) {

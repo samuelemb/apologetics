@@ -62,12 +62,30 @@ export const resendVerificationSchema = z.object({
   email: normalizedEmailSchema,
 });
 
+const profileText = (maximum: number) =>
+  z.string().optional().default("").pipe(z.string().trim().max(maximum)).transform((value) => value || null);
+
+const reservedUsernames = new Set([
+  "account", "activity", "admin", "api", "auth", "about", "contact", "events",
+  "login", "magazine", "news", "notifications", "profile", "security", "settings", "signup",
+]);
+
 export const publicProfileSchema = z.object({
   name: z
     .string()
     .trim()
     .min(2, "Name must be at least 2 characters.")
-    .max(120, "Name must be 120 characters or fewer."),
+    .max(80, "Name must be 80 characters or fewer."),
+  username: z.string().optional().default("").pipe(z.string().trim().toLowerCase().max(30)).transform((value) => value || null)
+    .refine((value) => value === null || /^[a-z0-9_-]{3,30}$/.test(value), "Use 3–30 lowercase letters, numbers, hyphens, or underscores.")
+    .refine((value) => value === null || !reservedUsernames.has(value), "That username is reserved."),
+  bio: profileText(160),
+  location: profileText(100),
+  timezone: z.string().optional().default("").pipe(z.string().trim().max(100)).transform((value) => value || null).refine(
+    (value) => value === null || Intl.supportedValuesOf("timeZone").includes(value),
+    "Choose a valid timezone.",
+  ),
+  image: z.string().url().max(2048).nullable().optional(),
 });
 
 export type PublicRegistrationInput = z.infer<typeof publicRegistrationSchema>;

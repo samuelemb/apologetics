@@ -186,6 +186,12 @@
   }
 }
 
+@layer components {
+  .profile-input {
+    @apply min-h-11 w-full rounded-[var(--public-radius)] border border-public-border bg-public-surface px-3 py-2 text-sm text-public-text shadow-sm outline-none transition-colors placeholder:text-public-muted-text focus:border-public-primary focus:ring-2 focus:ring-public-primary/15;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

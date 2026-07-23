@@ -185,6 +185,40 @@ export async function recordCompletedUpload(
   return toSafeAsset(asset);
 }
 
+export async function recordCompletedProfileAvatarUpload(
+  input: ProviderFile,
+): Promise<MediaFormAsset> {
+  const user = await prisma.user.findUnique({
+    where: { id: input.uploadedById },
+    select: { id: true, role: true, status: true, emailVerifiedAt: true },
+  });
+  if (!user || user.role !== "USER" || !user.emailVerifiedAt || !isLoginEligible(user.status, user.role)) {
+    throw new MediaServiceError("FORBIDDEN", "You do not have permission to upload a profile picture.");
+  }
+
+  const existing = await prisma.mediaAsset.findUnique({
+    where: { fileKey: input.fileKey },
+    select: safeAssetSelect,
+  });
+  if (existing) return toSafeAsset(existing);
+
+  const asset = await prisma.mediaAsset.create({
+    data: {
+      provider: MediaProvider.UPLOADTHING,
+      kind: input.kind,
+      status: MediaAssetStatus.PENDING,
+      fileKey: input.fileKey,
+      url: input.url,
+      originalName: input.originalName,
+      mimeType: input.mimeType,
+      sizeBytes: input.sizeBytes,
+      uploadedById: user.id,
+    },
+    select: safeAssetSelect,
+  });
+  return toSafeAsset(asset);
+}
+
 export async function recordOrphanedProviderUpload(
   input: Omit<ProviderFile, "uploadedById"> & { uploadedById: string | null },
 ): Promise<void> {

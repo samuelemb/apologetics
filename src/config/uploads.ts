@@ -45,6 +45,11 @@ export const MEDIA_UPLOAD_RULES: Record<MediaAssetKind, UploadRule> = {
     maximumBytes: IMAGE_UPLOAD_MAX_BYTES,
     mimeTypes: IMAGE_UPLOAD_MIME_TYPES,
   },
+  PROFILE_AVATAR: {
+    accept: IMAGE_UPLOAD_MIME_TYPES.join(","),
+    maximumBytes: 2 * 1024 * 1024,
+    mimeTypes: IMAGE_UPLOAD_MIME_TYPES,
+  },
   MAGAZINE_PDF: {
     accept: PDF_UPLOAD_MIME_TYPES.join(","),
     maximumBytes: PDF_UPLOAD_MAX_BYTES,

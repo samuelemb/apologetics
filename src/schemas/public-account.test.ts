@@ -25,6 +25,14 @@ test("public profile updates require a valid display name", () => {
   assert.equal(publicProfileSchema.safeParse({ name: " " }).success, false);
 });
 
+test("public profile validates usernames, bios, and timezones", () => {
+  assert.equal(publicProfileSchema.safeParse({ name: "Reader", username: "reader_1", bio: "A short introduction.", timezone: "Africa/Nairobi" }).success, true);
+  assert.equal(publicProfileSchema.safeParse({ name: "Reader", username: "Admin" }).success, false);
+  assert.equal(publicProfileSchema.safeParse({ name: "Reader", username: "too short" }).success, false);
+  assert.equal(publicProfileSchema.safeParse({ name: "Reader", bio: "a".repeat(161) }).success, false);
+  assert.equal(publicProfileSchema.safeParse({ name: "Reader", timezone: "Not/A-Timezone" }).success, false);
+});
+
 test("public registration rejects mismatched or weak passwords", () => {
   assert.equal(
     publicRegistrationSchema.safeParse({

@@ -4,15 +4,17 @@ import { createUploadthing, type FileRouter } from "uploadthing/next";
 import { UploadThingError } from "uploadthing/server";
 
 import {
+  IMAGE_UPLOAD_MIME_TYPES,
   hasAllowedFileSignature,
   validateUploadCandidate,
 } from "@/config/uploads";
 import type { MediaAssetKind } from "@/generated/prisma/enums";
-import { getCurrentAdmin } from "@/lib/auth/guards";
+import { getCurrentAdmin, getCurrentPublicUser } from "@/lib/auth/guards";
 import { canUploadMedia } from "@/lib/media-policy";
 import { deleteUploadThingFiles } from "@/lib/uploadthing-server";
 import {
   recordCompletedUpload,
+  recordCompletedProfileAvatarUpload,
   recordOrphanedProviderUpload,
 } from "@/services/media.service";
 
@@ -113,6 +115,22 @@ async function authorizeUpload(
   return { userId: user.id };
 }
 
+async function authorizeProfileAvatarUpload(
+  files: readonly { name: string; size: number; type: string }[],
+) {
+  const user = await getCurrentPublicUser();
+  if (!user) throw new UploadThingError({ code: "FORBIDDEN", message: "Authentication is required." });
+  if (files.length !== 1) throw new UploadThingError({ code: "BAD_REQUEST", message: "Select exactly one file." });
+  const file = files[0];
+  if (!IMAGE_UPLOAD_MIME_TYPES.includes(file.type as (typeof IMAGE_UPLOAD_MIME_TYPES)[number])) {
+    throw new UploadThingError({ code: "BAD_REQUEST", message: "Only JPEG, PNG, and WebP images are allowed." });
+  }
+  if (file.size <= 0 || file.size > 2 * 1024 * 1024) {
+    throw new UploadThingError({ code: "TOO_LARGE", message: "Profile pictures must be 2 MB or smaller." });
+  }
+  return { userId: user.id };
+}
+
 async function completeUpload(
   kind: MediaAssetKind,
   metadata: { userId: string },
@@ -123,6 +141,7 @@ async function completeUpload(
     type: string;
     size: number;
   },
+  profileAvatar = false,
 ) {
   const providerFile = {
     fileKey: file.key,
@@ -147,7 +166,9 @@ async function completeUpload(
       throw new Error("Invalid completed upload signature");
     }
 
-    const asset = await recordCompletedUpload(providerFile);
+    const asset = profileAvatar
+      ? await recordCompletedProfileAvatarUpload(providerFile)
+      : await recordCompletedUpload(providerFile);
     return { asset, error: null };
   } catch {
     try {
@@ -182,6 +203,11 @@ export const uploadRouter = {
     .middleware(({ files }) => authorizeUpload("MAGAZINE_PDF", files))
     .onUploadComplete(({ metadata, file }) =>
       completeUpload("MAGAZINE_PDF", metadata, file),
+    ),
+  profileAvatar: upload(imageRouteConfig)
+    .middleware(({ files }) => authorizeProfileAvatarUpload(files))
+    .onUploadComplete(({ metadata, file }) =>
+      completeUpload("PROFILE_AVATAR", metadata, file, true),
     ),
 } satisfies FileRouter;
 

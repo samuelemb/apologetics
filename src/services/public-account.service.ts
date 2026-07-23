@@ -40,7 +40,9 @@ export class PublicAccountError extends Error {
       | "INVALID_CODE"
       | "CODE_EXPIRED"
       | "TOO_MANY_ATTEMPTS"
-      | "EMAIL_DELIVERY_FAILED",
+      | "EMAIL_DELIVERY_FAILED"
+      | "USERNAME_TAKEN"
+      | "INVALID_IMAGE",
     message: string,
   ) {
     super(message);
@@ -282,6 +284,7 @@ export async function updatePublicUserProfile(
       role: true,
       status: true,
       emailVerifiedAt: true,
+      image: true,
     },
   });
 
@@ -297,21 +300,60 @@ export async function updatePublicUserProfile(
     );
   }
 
-  const updated = await prisma.user.update({
-    where: { id: user.id },
-    data: { name: parsed.name },
-    select: { id: true, name: true },
-  });
+  let newImageAssetId: string | null = null;
+  if (parsed.image && parsed.image !== user.image) {
+    const imageAsset = await prisma.mediaAsset.findFirst({
+      where: {
+        url: parsed.image,
+        uploadedById: user.id,
+        kind: "PROFILE_AVATAR",
+        status: "PENDING",
+      },
+      select: { id: true },
+    });
+    if (!imageAsset) {
+      throw new PublicAccountError("INVALID_IMAGE", "The selected profile picture is not available.");
+    }
+    newImageAssetId = imageAsset.id;
+  }
 
-  if (updated.name !== user.name) {
+  let updated;
+  try {
+    updated = await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        name: parsed.name,
+        username: parsed.username,
+        bio: parsed.bio,
+        location: parsed.location,
+        timezone: parsed.timezone,
+        ...(parsed.image !== undefined ? { image: parsed.image } : {}),
+      },
+      select: { id: true, name: true, image: true },
+    });
+  } catch (error) {
+    if (typeof error === "object" && error !== null && "code" in error && error.code === "P2002") {
+      throw new PublicAccountError("USERNAME_TAKEN", "That username is already in use.");
+    }
+    throw error;
+  }
+
+  if (updated.name !== user.name || parsed.image !== undefined) {
     await prisma.auditLog.create({
       data: {
         userId: updated.id,
         action: "USER_PROFILE_UPDATED",
         entityType: "User",
         entityId: updated.id,
-        metadata: { changedFields: ["name"] },
+        metadata: { changedFields: ["profile"] },
       },
+    });
+  }
+
+  if (newImageAssetId) {
+    await prisma.mediaAsset.updateMany({
+      where: { id: newImageAssetId, status: "PENDING" },
+      data: { status: "ATTACHED", attachedAt: new Date() },
     });
   }
 

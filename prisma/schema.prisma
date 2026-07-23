@@ -80,6 +80,7 @@ enum MediaAssetKind {
   EVENT_COVER
   MAGAZINE_COVER
   MAGAZINE_PDF
+  PROFILE_AVATAR
 }
 
 enum MediaAssetStatus {
@@ -95,6 +96,10 @@ model User {
   email          String          @unique
   passwordHash   String
   image          String?
+  username       String?         @unique
+  bio            String?
+  location       String?
+  timezone       String?
   role           UserRole        @default(AUTHOR)
   status         UserStatus      @default(INVITED)
   emailVerifiedAt DateTime?
@@ -112,6 +117,7 @@ model User {
   contentComments ContentComment[] @relation("ContentCommentAuthor")
 
   @@index([role, status])
+  @@index([username])
 }
 
 model ContentComment {

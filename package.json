@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "node scripts/next-build.cjs",
+    "build": "node scripts/next-build.mjs",
     "start": "next start",
     "lint": "eslint",
     "test:auth": "tsx --test src/schemas/auth.test.ts src/schemas/public-account.test.ts src/schemas/content-like.test.ts src/schemas/content-comment.test.ts src/lib/auth/permissions.test.ts",

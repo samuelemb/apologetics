@@ -1,6 +1,8 @@
-const { spawnSync } = require("node:child_process");
-const { realpathSync } = require("node:fs");
+import { spawnSync } from "node:child_process";
+import { realpathSync } from "node:fs";
+import { createRequire } from "node:module";
 
+const require = createRequire(import.meta.url);
 const projectRoot = realpathSync.native(process.cwd());
 const nextCli = realpathSync.native(require.resolve("next/dist/bin/next"));
 const result = spawnSync(process.execPath, [nextCli, "build"], {

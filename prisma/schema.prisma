@@ -107,6 +107,7 @@ model User {
   mediaAssets    MediaAsset[]
   newsArticles   NewsArticle[]
   emailVerificationCode EmailVerificationCode?
+  passwordResetToken PasswordResetToken?
   contentLikes   ContentLike[]
   contentComments ContentComment[] @relation("ContentCommentAuthor")
 
@@ -155,6 +156,17 @@ model EmailVerificationCode {
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([expiresAt])
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  tokenHash String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([expiresAt])
 }

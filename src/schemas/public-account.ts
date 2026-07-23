@@ -16,6 +16,19 @@ const publicPasswordSchema = z
   .refine((value) => /[A-Z]/.test(value), "Include an uppercase letter.")
   .refine((value) => /[0-9]/.test(value), "Include a number.");
 
+export const passwordResetRequestSchema = z.object({ email: normalizedEmailSchema });
+
+export const passwordResetSchema = z
+  .object({
+    token: z.string().trim().min(32, "Reset link is invalid.").max(128, "Reset link is invalid."),
+    password: publicPasswordSchema,
+    confirmPassword: z.string(),
+  })
+  .refine((value) => value.password === value.confirmPassword, {
+    path: ["confirmPassword"],
+    message: "Passwords do not match.",
+  });
+
 export const publicRegistrationSchema = z
   .object({
     name: z
@@ -61,3 +74,5 @@ export type PublicRegistrationInput = z.infer<typeof publicRegistrationSchema>;
 export type PublicLoginInput = z.infer<typeof publicLoginSchema>;
 export type EmailVerificationInput = z.infer<typeof emailVerificationSchema>;
 export type PublicProfileInput = z.infer<typeof publicProfileSchema>;
+export type PasswordResetRequestInput = z.infer<typeof passwordResetRequestSchema>;
+export type PasswordResetInput = z.infer<typeof passwordResetSchema>;

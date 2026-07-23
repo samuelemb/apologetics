@@ -3,6 +3,8 @@ import test from "node:test";
 
 import {
   emailVerificationSchema,
+  passwordResetRequestSchema,
+  passwordResetSchema,
   publicProfileSchema,
   publicRegistrationSchema,
 } from "@/schemas/public-account";
@@ -50,4 +52,16 @@ test("verification codes must be exactly four digits", () => {
     }).success,
     false,
   );
+});
+
+test("password reset requests normalize email addresses", () => {
+  const result = passwordResetRequestSchema.parse({ email: " Reader@Example.TEST " });
+  assert.equal(result.email, "reader@example.test");
+});
+
+test("password resets require a valid token and matching strong passwords", () => {
+  const input = { token: "a".repeat(43), password: "StrongPassword12", confirmPassword: "StrongPassword12" };
+  assert.equal(passwordResetSchema.safeParse(input).success, true);
+  assert.equal(passwordResetSchema.safeParse({ ...input, confirmPassword: "DifferentPassword12" }).success, false);
+  assert.equal(passwordResetSchema.safeParse({ ...input, token: "short" }).success, false);
 });

@@ -1,11 +1,11 @@
 import "server-only";
 
-import { createHmac, randomInt, timingSafeEqual } from "node:crypto";
+import { createHmac, randomBytes, randomInt, timingSafeEqual } from "node:crypto";
 
 import { hash } from "bcryptjs";
 
 import { UserRole, UserStatus } from "@/generated/prisma/enums";
-import { EmailDeliveryError, sendVerificationEmail } from "@/lib/resend";
+import { EmailDeliveryError, sendPasswordResetEmail, sendVerificationEmail } from "@/lib/resend";
 import { prisma } from "@/lib/prisma";
 import {
   emailVerificationSchema,
@@ -15,12 +15,17 @@ import {
   type EmailVerificationInput,
   type PublicProfileInput,
   type PublicRegistrationInput,
+  passwordResetRequestSchema,
+  passwordResetSchema,
+  type PasswordResetInput,
+  type PasswordResetRequestInput,
 } from "@/schemas/public-account";
 
 const CODE_EXPIRY_MS = 10 * 60 * 1000;
 const RESEND_COOLDOWN_MS = 60 * 1000;
 const MAX_VERIFICATION_ATTEMPTS = 5;
 const PASSWORD_HASH_ROUNDS = 12;
+const PASSWORD_RESET_EXPIRY_MS = 30 * 60 * 1000;
 
 export class PublicAccountError extends Error {
   constructor(
@@ -37,6 +42,16 @@ export class PublicAccountError extends Error {
     super(message);
     this.name = "PublicAccountError";
   }
+}
+
+function hashPasswordResetToken(token: string): string {
+  return hashVerificationCode(token);
+}
+
+function getPublicAppUrl(): string {
+  const value = process.env.NEXT_PUBLIC_APP_URL;
+  if (!value) throw new PublicAccountError("EMAIL_DELIVERY_FAILED", "Password reset is not configured.");
+  return value;
 }
 
 function createVerificationCode(): string {
@@ -307,4 +322,38 @@ export async function updatePublicUserProfile(
   }
 
   return updated;
+}
+
+export async function requestPasswordReset(input: PasswordResetRequestInput) {
+  const { email } = passwordResetRequestSchema.parse(input);
+  const user = await prisma.user.findUnique({ where: { email }, select: { id: true, email: true, name: true, role: true, status: true, emailVerifiedAt: true } });
+  if (!user || user.role !== UserRole.USER || user.status !== UserStatus.ACTIVE || !user.emailVerifiedAt) return;
+
+  const token = randomBytes(32).toString("base64url");
+  const expiresAt = new Date(Date.now() + PASSWORD_RESET_EXPIRY_MS);
+  await prisma.passwordResetToken.upsert({ where: { userId: user.id }, create: { userId: user.id, tokenHash: hashPasswordResetToken(token), expiresAt }, update: { tokenHash: hashPasswordResetToken(token), expiresAt } });
+
+  try {
+    const resetUrl = new URL("/reset-password", getPublicAppUrl());
+    resetUrl.searchParams.set("token", token);
+    await sendPasswordResetEmail({ email: user.email, name: user.name, resetUrl: resetUrl.toString() });
+  } catch (error) {
+    await prisma.passwordResetToken.delete({ where: { userId: user.id } }).catch(() => undefined);
+    if (error instanceof EmailDeliveryError || error instanceof PublicAccountError) throw new PublicAccountError("EMAIL_DELIVERY_FAILED", "We could not send a reset email. Please try again shortly.");
+    throw error;
+  }
+}
+
+export async function resetPassword(input: PasswordResetInput) {
+  const parsed = passwordResetSchema.parse(input);
+  const passwordHash = await hash(parsed.password, PASSWORD_HASH_ROUNDS);
+  await prisma.$transaction(async (transaction) => {
+    const resetToken = await transaction.passwordResetToken.findUnique({ where: { tokenHash: hashPasswordResetToken(parsed.token) }, include: { user: { select: { id: true, role: true, status: true, emailVerifiedAt: true } } } });
+    if (!resetToken || resetToken.expiresAt <= new Date() || resetToken.user.role !== UserRole.USER || resetToken.user.status !== UserStatus.ACTIVE || !resetToken.user.emailVerifiedAt) {
+      throw new PublicAccountError("INVALID_CODE", "This password reset link is invalid or has expired.");
+    }
+    await transaction.user.update({ where: { id: resetToken.userId }, data: { passwordHash } });
+    await transaction.passwordResetToken.delete({ where: { id: resetToken.id } });
+    await transaction.auditLog.create({ data: { userId: resetToken.userId, action: "USER_PASSWORD_RESET", entityType: "User", entityId: resetToken.userId } });
+  }, { isolationLevel: "Serializable" });
 }

@@ -6,6 +6,8 @@ import {
   registerPublicUser,
   resendPublicVerification,
   updatePublicUserProfile,
+  requestPasswordReset,
+  resetPassword,
   PublicAccountError,
 } from "@/services/public-account.service";
 import { requirePublicUser } from "@/lib/auth/guards";
@@ -85,4 +87,18 @@ export async function updatePublicProfileAction(
   } catch (error) {
     return actionError(error);
   }
+}
+
+export async function requestPasswordResetAction(_previousState: PublicAccountActionState, formData: FormData): Promise<PublicAccountActionState> {
+  try {
+    await requestPasswordReset({ email: String(formData.get("email") ?? "") });
+    return { status: "success", message: "If an eligible account exists for this email, we sent a password reset link." };
+  } catch (error) { return actionError(error); }
+}
+
+export async function resetPasswordAction(_previousState: PublicAccountActionState, formData: FormData): Promise<PublicAccountActionState> {
+  try {
+    await resetPassword({ token: String(formData.get("token") ?? ""), password: String(formData.get("password") ?? ""), confirmPassword: String(formData.get("confirmPassword") ?? "") });
+    return { status: "success", message: "Your password has been reset. You can now sign in." };
+  } catch (error) { return actionError(error); }
 }

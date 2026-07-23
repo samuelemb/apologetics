@@ -163,8 +163,10 @@ model EmailVerificationCode {
 model PasswordResetToken {
   id        String   @id @default(cuid())
   userId    String   @unique
-  tokenHash String   @unique
+  codeHash  String
   expiresAt DateTime
+  attempts  Int      @default(0)
+  lastSentAt DateTime?
   createdAt DateTime @default(now())
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 

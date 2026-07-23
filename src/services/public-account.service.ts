@@ -1,6 +1,6 @@
 import "server-only";
 
-import { createHmac, randomBytes, randomInt, timingSafeEqual } from "node:crypto";
+import { createHmac, randomInt, timingSafeEqual } from "node:crypto";
 
 import { hash } from "bcryptjs";
 
@@ -26,6 +26,7 @@ const RESEND_COOLDOWN_MS = 60 * 1000;
 const MAX_VERIFICATION_ATTEMPTS = 5;
 const PASSWORD_HASH_ROUNDS = 12;
 const PASSWORD_RESET_EXPIRY_MS = 30 * 60 * 1000;
+const MAX_PASSWORD_RESET_ATTEMPTS = 5;
 
 export class PublicAccountError extends Error {
   constructor(
@@ -42,16 +43,6 @@ export class PublicAccountError extends Error {
     super(message);
     this.name = "PublicAccountError";
   }
-}
-
-function hashPasswordResetToken(token: string): string {
-  return hashVerificationCode(token);
-}
-
-function getPublicAppUrl(): string {
-  const value = process.env.NEXT_PUBLIC_APP_URL;
-  if (!value) throw new PublicAccountError("EMAIL_DELIVERY_FAILED", "Password reset is not configured.");
-  return value;
 }
 
 function createVerificationCode(): string {
@@ -329,14 +320,12 @@ export async function requestPasswordReset(input: PasswordResetRequestInput) {
   const user = await prisma.user.findUnique({ where: { email }, select: { id: true, email: true, name: true, role: true, status: true, emailVerifiedAt: true } });
   if (!user || user.role !== UserRole.USER || user.status !== UserStatus.ACTIVE || !user.emailVerifiedAt) return;
 
-  const token = randomBytes(32).toString("base64url");
+  const code = createVerificationCode();
   const expiresAt = new Date(Date.now() + PASSWORD_RESET_EXPIRY_MS);
-  await prisma.passwordResetToken.upsert({ where: { userId: user.id }, create: { userId: user.id, tokenHash: hashPasswordResetToken(token), expiresAt }, update: { tokenHash: hashPasswordResetToken(token), expiresAt } });
+  await prisma.passwordResetToken.upsert({ where: { userId: user.id }, create: { userId: user.id, codeHash: hashVerificationCode(code), expiresAt, lastSentAt: new Date() }, update: { codeHash: hashVerificationCode(code), expiresAt, attempts: 0, lastSentAt: new Date() } });
 
   try {
-    const resetUrl = new URL("/reset-password", getPublicAppUrl());
-    resetUrl.searchParams.set("token", token);
-    await sendPasswordResetEmail({ email: user.email, name: user.name, resetUrl: resetUrl.toString() });
+    await sendPasswordResetEmail({ email: user.email, name: user.name, code });
   } catch (error) {
     await prisma.passwordResetToken.delete({ where: { userId: user.id } }).catch(() => undefined);
     if (error instanceof EmailDeliveryError || error instanceof PublicAccountError) throw new PublicAccountError("EMAIL_DELIVERY_FAILED", "We could not send a reset email. Please try again shortly.");
@@ -344,15 +333,27 @@ export async function requestPasswordReset(input: PasswordResetRequestInput) {
   }
 }
 
+export async function resendPasswordResetCode(input: PasswordResetRequestInput) {
+  const { email } = passwordResetRequestSchema.parse(input);
+  const existing = await prisma.passwordResetToken.findFirst({ where: { user: { email, role: UserRole.USER, status: UserStatus.ACTIVE, emailVerifiedAt: { not: null } } }, select: { lastSentAt: true } });
+  if (existing?.lastSentAt && Date.now() - existing.lastSentAt.getTime() < RESEND_COOLDOWN_MS) throw new PublicAccountError("RESEND_TOO_SOON", "Please wait one minute before requesting another code.");
+  return requestPasswordReset({ email });
+}
+
 export async function resetPassword(input: PasswordResetInput) {
   const parsed = passwordResetSchema.parse(input);
   const passwordHash = await hash(parsed.password, PASSWORD_HASH_ROUNDS);
   await prisma.$transaction(async (transaction) => {
-    const resetToken = await transaction.passwordResetToken.findUnique({ where: { tokenHash: hashPasswordResetToken(parsed.token) }, include: { user: { select: { id: true, role: true, status: true, emailVerifiedAt: true } } } });
-    if (!resetToken || resetToken.expiresAt <= new Date() || resetToken.user.role !== UserRole.USER || resetToken.user.status !== UserStatus.ACTIVE || !resetToken.user.emailVerifiedAt) {
-      throw new PublicAccountError("INVALID_CODE", "This password reset link is invalid or has expired.");
+    const user = await transaction.user.findUnique({ where: { email: parsed.email }, select: { id: true, role: true, status: true, emailVerifiedAt: true, passwordResetToken: true } });
+    const resetToken = user?.passwordResetToken;
+    if (!user || !resetToken || resetToken.expiresAt <= new Date() || resetToken.attempts >= MAX_PASSWORD_RESET_ATTEMPTS || user.role !== UserRole.USER || user.status !== UserStatus.ACTIVE || !user.emailVerifiedAt) {
+      throw new PublicAccountError("INVALID_CODE", "This password reset code is invalid or has expired.");
     }
-    await transaction.user.update({ where: { id: resetToken.userId }, data: { passwordHash } });
+    if (!codesMatch(hashVerificationCode(parsed.code), resetToken.codeHash)) {
+      await transaction.passwordResetToken.update({ where: { id: resetToken.id }, data: { attempts: { increment: 1 } } });
+      throw new PublicAccountError("INVALID_CODE", "The reset code is incorrect.");
+    }
+    await transaction.user.update({ where: { id: user.id }, data: { passwordHash } });
     await transaction.passwordResetToken.delete({ where: { id: resetToken.id } });
     await transaction.auditLog.create({ data: { userId: resetToken.userId, action: "USER_PASSWORD_RESET", entityType: "User", entityId: resetToken.userId } });
   }, { isolationLevel: "Serializable" });

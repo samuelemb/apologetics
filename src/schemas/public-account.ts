@@ -20,7 +20,8 @@ export const passwordResetRequestSchema = z.object({ email: normalizedEmailSchem
 
 export const passwordResetSchema = z
   .object({
-    token: z.string().trim().min(32, "Reset link is invalid.").max(128, "Reset link is invalid."),
+    email: normalizedEmailSchema,
+    code: z.string().trim().regex(/^\d{4}$/, "Enter the four-digit reset code."),
     password: publicPasswordSchema,
     confirmPassword: z.string(),
   })

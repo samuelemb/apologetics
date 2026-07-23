@@ -9,7 +9,7 @@ type SendVerificationEmailInput = {
 type SendPasswordResetEmailInput = {
   email: string;
   name: string;
-  resetUrl: string;
+  code: string;
 };
 
 export class EmailDeliveryError extends Error {
@@ -52,7 +52,7 @@ export async function sendVerificationEmail({
   }
 }
 
-export async function sendPasswordResetEmail({ email, name, resetUrl }: SendPasswordResetEmailInput): Promise<void> {
+export async function sendPasswordResetEmail({ email, name, code }: SendPasswordResetEmailInput): Promise<void> {
   const apiKey = process.env.RESEND_API_KEY;
   const from = process.env.EMAIL_FROM;
   if (!apiKey || !from) throw new EmailDeliveryError("Email delivery is not configured.");
@@ -64,7 +64,7 @@ export async function sendPasswordResetEmail({ email, name, resetUrl }: SendPass
       from,
       to: [email],
       subject: "Reset your APOLOGETICS password",
-      text: `Hello ${name},\n\nUse this link to reset your APOLOGETICS password:\n${resetUrl}\n\nThis link expires in 30 minutes and can only be used once. If you did not request a reset, you can ignore this email.`,
+      text: `Hello ${name},\n\nYour APOLOGETICS password reset code is ${code}. It expires in 30 minutes.\n\nIf you did not request a reset, you can ignore this email.`,
     }),
     cache: "no-store",
   });

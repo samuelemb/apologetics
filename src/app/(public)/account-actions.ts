@@ -7,6 +7,7 @@ import {
   resendPublicVerification,
   updatePublicUserProfile,
   requestPasswordReset,
+  resendPasswordResetCode,
   resetPassword,
   PublicAccountError,
 } from "@/services/public-account.service";
@@ -91,14 +92,23 @@ export async function updatePublicProfileAction(
 
 export async function requestPasswordResetAction(_previousState: PublicAccountActionState, formData: FormData): Promise<PublicAccountActionState> {
   try {
-    await requestPasswordReset({ email: String(formData.get("email") ?? "") });
-    return { status: "success", message: "If an eligible account exists for this email, we sent a password reset link." };
+    const email = String(formData.get("email") ?? "");
+    await requestPasswordReset({ email });
+    return { status: "success", email: email.trim().toLowerCase(), message: "If an eligible account exists for this email, we sent a password reset code." };
+  } catch (error) { return actionError(error); }
+}
+
+export async function resendPasswordResetCodeAction(_previousState: PublicAccountActionState, formData: FormData): Promise<PublicAccountActionState> {
+  try {
+    const email = String(formData.get("email") ?? "");
+    await resendPasswordResetCode({ email });
+    return { status: "success", email: email.trim().toLowerCase(), message: "If an eligible account exists for this email, we sent a new password reset code." };
   } catch (error) { return actionError(error); }
 }
 
 export async function resetPasswordAction(_previousState: PublicAccountActionState, formData: FormData): Promise<PublicAccountActionState> {
   try {
-    await resetPassword({ token: String(formData.get("token") ?? ""), password: String(formData.get("password") ?? ""), confirmPassword: String(formData.get("confirmPassword") ?? "") });
+    await resetPassword({ email: String(formData.get("email") ?? ""), code: String(formData.get("code") ?? ""), password: String(formData.get("password") ?? ""), confirmPassword: String(formData.get("confirmPassword") ?? "") });
     return { status: "success", message: "Your password has been reset. You can now sign in." };
   } catch (error) { return actionError(error); }
 }

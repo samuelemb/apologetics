@@ -14,7 +14,6 @@ import {
   contentCommentCreateSchema,
   contentCommentEditSchema,
   contentCommentPageSchema,
-  contentCommentTargetSchema,
 } from "@/schemas/content-comment";
 
 const COMMENTS_PAGE_SIZE = 20;
@@ -154,14 +153,28 @@ type PublicContentCommentPage = { comments: PublicContentComment[]; nextCursor: 
 
 async function getCommentPage(input: unknown, currentUserId?: string | null): Promise<PublicContentCommentPage> {
   const parsed = contentCommentPageSchema.parse(input);
-  const where = { contentType: parsed.contentType, contentId: parsed.contentId, parentId: parsed.parentId ?? null };
+  const where = {
+    contentType: parsed.contentType,
+    contentId: parsed.contentId,
+    parentId: parsed.parentId ?? null,
+    status: ContentCommentStatus.PUBLISHED,
+  };
   const [comments, totalCount] = await Promise.all([
     prisma.contentComment.findMany({
       where,
       orderBy: [{ createdAt: "asc" }, { id: "asc" }],
       take: COMMENTS_PAGE_SIZE + 1,
       ...(parsed.cursor ? { cursor: { id: parsed.cursor }, skip: 1 } : {}),
-      select: { id: true, parentId: true, body: true, status: true, createdAt: true, updatedAt: true, author: { select: { id: true, name: true } }, _count: { select: { replies: true } } },
+      select: {
+        id: true,
+        parentId: true,
+        body: true,
+        status: true,
+        createdAt: true,
+        updatedAt: true,
+        author: { select: { id: true, name: true } },
+        _count: { select: { replies: { where: { status: ContentCommentStatus.PUBLISHED } } } },
+      },
     }),
     prisma.contentComment.count({ where }),
   ]);

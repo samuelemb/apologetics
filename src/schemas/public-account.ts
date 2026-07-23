@@ -20,8 +20,7 @@ export const passwordResetRequestSchema = z.object({ email: normalizedEmailSchem
 
 export const passwordResetSchema = z
   .object({
-    email: normalizedEmailSchema,
-    code: z.string().trim().regex(/^\d{4}$/, "Enter the four-digit reset code."),
+    token: z.string().trim().min(32, "Reset authorization is invalid.").max(128, "Reset authorization is invalid."),
     password: publicPasswordSchema,
     confirmPassword: z.string(),
   })
@@ -77,3 +76,10 @@ export type EmailVerificationInput = z.infer<typeof emailVerificationSchema>;
 export type PublicProfileInput = z.infer<typeof publicProfileSchema>;
 export type PasswordResetRequestInput = z.infer<typeof passwordResetRequestSchema>;
 export type PasswordResetInput = z.infer<typeof passwordResetSchema>;
+
+export const passwordResetCodeSchema = z.object({
+  email: normalizedEmailSchema,
+  code: z.string().trim().regex(/^\d{4}$/, "Enter the four-digit reset code."),
+});
+
+export type PasswordResetCodeInput = z.infer<typeof passwordResetCodeSchema>;

@@ -59,9 +59,9 @@ test("password reset requests normalize email addresses", () => {
   assert.equal(result.email, "reader@example.test");
 });
 
-test("password resets require a valid code and matching strong passwords", () => {
-  const input = { email: "reader@example.test", code: "1234", password: "StrongPassword12", confirmPassword: "StrongPassword12" };
+test("password resets require a verified authorization and matching strong passwords", () => {
+  const input = { token: "a".repeat(43), password: "StrongPassword12", confirmPassword: "StrongPassword12" };
   assert.equal(passwordResetSchema.safeParse(input).success, true);
   assert.equal(passwordResetSchema.safeParse({ ...input, confirmPassword: "DifferentPassword12" }).success, false);
-  assert.equal(passwordResetSchema.safeParse({ ...input, code: "123" }).success, false);
+  assert.equal(passwordResetSchema.safeParse({ ...input, token: "short" }).success, false);
 });

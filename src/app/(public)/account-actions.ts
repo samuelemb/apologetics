@@ -8,6 +8,7 @@ import {
   updatePublicUserProfile,
   requestPasswordReset,
   resendPasswordResetCode,
+  verifyPasswordResetCode,
   resetPassword,
   PublicAccountError,
 } from "@/services/public-account.service";
@@ -106,9 +107,16 @@ export async function resendPasswordResetCodeAction(_previousState: PublicAccoun
   } catch (error) { return actionError(error); }
 }
 
+export async function verifyPasswordResetCodeAction(_previousState: PublicAccountActionState, formData: FormData): Promise<PublicAccountActionState> {
+  try {
+    const result = await verifyPasswordResetCode({ email: String(formData.get("email") ?? ""), code: String(formData.get("code") ?? "") });
+    return { status: "success", token: result.token, message: "Code verified." };
+  } catch (error) { return actionError(error); }
+}
+
 export async function resetPasswordAction(_previousState: PublicAccountActionState, formData: FormData): Promise<PublicAccountActionState> {
   try {
-    await resetPassword({ email: String(formData.get("email") ?? ""), code: String(formData.get("code") ?? ""), password: String(formData.get("password") ?? ""), confirmPassword: String(formData.get("confirmPassword") ?? "") });
+    await resetPassword({ token: String(formData.get("token") ?? ""), password: String(formData.get("password") ?? ""), confirmPassword: String(formData.get("confirmPassword") ?? "") });
     return { status: "success", message: "Your password has been reset. You can now sign in." };
   } catch (error) { return actionError(error); }
 }

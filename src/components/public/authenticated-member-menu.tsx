@@ -7,16 +7,13 @@ import { signOut } from "next-auth/react";
 import { useEffect, useRef, useState } from "react";
 
 import { cn } from "@/lib/utils";
+import { getMemberInitials } from "@/lib/member-avatar";
 
 type AuthenticatedMemberMenuProps = { name: string; image?: string | null; unreadCount?: number };
 
-function memberInitials(name: string) {
-  return name.trim().split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]?.toUpperCase()).join("") || "A";
-}
-
 export function MemberAvatar({ name, image, className }: { name: string; image?: string | null; className?: string }) {
   if (image) return <Image src={image} alt={`${name} profile picture`} width={44} height={44} className={cn("size-11 rounded-full object-cover", className)} />;
-  return <span aria-label={`${name} profile`} className={cn("inline-flex size-11 shrink-0 items-center justify-center rounded-full bg-[#f7edde] font-editorial text-sm font-bold text-public-text", className)}>{memberInitials(name)}</span>;
+  return <span aria-label={`${name} profile`} className={cn("inline-flex size-11 shrink-0 items-center justify-center rounded-full bg-[#f7edde] font-editorial text-sm font-bold text-public-text", className)}>{getMemberInitials(name)}</span>;
 }
 
 function NotificationBadge({ count }: { count: number }) {

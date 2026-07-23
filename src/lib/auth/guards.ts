@@ -70,9 +70,11 @@ export async function getCurrentPublicUser() {
       id: true,
       name: true,
       email: true,
+      image: true,
       role: true,
       status: true,
       emailVerifiedAt: true,
+      createdAt: true,
     },
   });
 

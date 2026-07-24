@@ -10,6 +10,8 @@ import {
   resendPasswordResetCode,
   verifyPasswordResetCode,
   resetPassword,
+  changePublicUserPassword,
+  deletePublicUserAccount,
   PublicAccountError,
 } from "@/services/public-account.service";
 import { requirePublicUser } from "@/lib/auth/guards";
@@ -123,5 +125,21 @@ export async function resetPasswordAction(_previousState: PublicAccountActionSta
   try {
     await resetPassword({ token: String(formData.get("token") ?? ""), password: String(formData.get("password") ?? ""), confirmPassword: String(formData.get("confirmPassword") ?? "") });
     return { status: "success", message: "Your password has been reset. You can now sign in." };
+  } catch (error) { return actionError(error); }
+}
+
+export async function changePublicPasswordAction(_previousState: PublicAccountActionState, formData: FormData): Promise<PublicAccountActionState> {
+  try {
+    const user = await requirePublicUser();
+    await changePublicUserPassword(user.id, { currentPassword: String(formData.get("currentPassword") ?? ""), password: String(formData.get("password") ?? ""), confirmPassword: String(formData.get("confirmPassword") ?? "") });
+    return { status: "success", message: "Your password has been updated successfully." };
+  } catch (error) { return actionError(error); }
+}
+
+export async function deletePublicAccountAction(_previousState: PublicAccountActionState, formData: FormData): Promise<PublicAccountActionState> {
+  try {
+    const user = await requirePublicUser();
+    await deletePublicUserAccount(user.id, { confirmation: String(formData.get("confirmation") ?? ""), currentPassword: String(formData.get("currentPassword") ?? "") });
+    return { status: "success", message: "Your account has been deleted." };
   } catch (error) { return actionError(error); }
 }

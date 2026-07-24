@@ -2,12 +2,13 @@ import "server-only";
 
 import { createHmac, randomBytes, randomInt, timingSafeEqual } from "node:crypto";
 
-import { hash } from "bcryptjs";
+import { compare, hash } from "bcryptjs";
 
 import { UserRole, UserStatus } from "@/generated/prisma/enums";
 import { EmailDeliveryError, sendPasswordResetEmail, sendVerificationEmail } from "@/lib/resend";
 import { prisma } from "@/lib/prisma";
 import { finalizeOrphanedMediaAsset } from "@/services/media.service";
+import { deleteUploadThingFiles } from "@/lib/uploadthing-server";
 import {
   emailVerificationSchema,
   publicRegistrationSchema,
@@ -22,6 +23,9 @@ import {
   type PasswordResetRequestInput,
   passwordResetCodeSchema,
   type PasswordResetCodeInput,
+  changePasswordSchema,
+  deletePublicAccountSchema,
+  type ChangePasswordInput,
 } from "@/schemas/public-account";
 
 const CODE_EXPIRY_MS = 10 * 60 * 1000;
@@ -43,7 +47,10 @@ export class PublicAccountError extends Error {
       | "TOO_MANY_ATTEMPTS"
       | "EMAIL_DELIVERY_FAILED"
       | "USERNAME_TAKEN"
-      | "INVALID_IMAGE",
+      | "INVALID_IMAGE"
+      | "INCORRECT_PASSWORD"
+      | "SAME_PASSWORD"
+      | "INVALID_CONFIRMATION",
     message: string,
   ) {
     super(message);
@@ -370,6 +377,60 @@ export async function updatePublicUserProfile(
   }
 
   return updated;
+}
+
+export async function changePublicUserPassword(userId: string, input: ChangePasswordInput) {
+  const parsed = changePasswordSchema.parse(input);
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { id: true, role: true, status: true, emailVerifiedAt: true, passwordHash: true },
+  });
+  if (!user || user.role !== UserRole.USER || user.status !== UserStatus.ACTIVE || !user.emailVerifiedAt) {
+    throw new PublicAccountError("NOT_PENDING_VERIFICATION", "Your account is not available for password updates.");
+  }
+  if (!(await compare(parsed.currentPassword, user.passwordHash))) {
+    throw new PublicAccountError("INCORRECT_PASSWORD", "The current password is incorrect.");
+  }
+  if (await compare(parsed.password, user.passwordHash)) {
+    throw new PublicAccountError("SAME_PASSWORD", "Choose a new password that is different from your current password.");
+  }
+  await prisma.$transaction([
+    prisma.user.update({ where: { id: user.id }, data: { passwordHash: await hash(parsed.password, PASSWORD_HASH_ROUNDS) } }),
+    prisma.auditLog.create({ data: { userId: user.id, action: "USER_PASSWORD_CHANGED", entityType: "User", entityId: user.id } }),
+  ]);
+}
+
+export async function deletePublicUserAccount(userId: string, input: { confirmation: string; currentPassword: string }) {
+  const parsed = deletePublicAccountSchema.parse(input);
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { id: true, role: true, status: true, emailVerifiedAt: true, passwordHash: true },
+  });
+  if (!user || user.role !== UserRole.USER || user.status !== UserStatus.ACTIVE || !user.emailVerifiedAt) {
+    throw new PublicAccountError("NOT_PENDING_VERIFICATION", "Your account is not available for deletion.");
+  }
+  if (!(await compare(parsed.currentPassword, user.passwordHash))) {
+    throw new PublicAccountError("INCORRECT_PASSWORD", "The current password is incorrect.");
+  }
+
+  const avatarAssets = await prisma.mediaAsset.findMany({
+    where: { uploadedById: user.id, kind: "PROFILE_AVATAR", status: { not: "DELETED" } },
+    select: { id: true, fileKey: true },
+  });
+  await prisma.$transaction(async (transaction) => {
+    if (avatarAssets.length) {
+      await transaction.mediaAsset.updateMany({ where: { id: { in: avatarAssets.map((asset) => asset.id) } }, data: { status: "ORPHANED" } });
+    }
+    await transaction.auditLog.create({ data: { userId: user.id, action: "USER_SELF_DELETED", entityType: "User", entityId: user.id } });
+    await transaction.user.delete({ where: { id: user.id } });
+  }, { isolationLevel: "Serializable" });
+
+  try {
+    await deleteUploadThingFiles(avatarAssets.map((asset) => asset.fileKey));
+    if (avatarAssets.length) await prisma.mediaAsset.updateMany({ where: { id: { in: avatarAssets.map((asset) => asset.id) } }, data: { status: "DELETED", deletedAt: new Date() } });
+  } catch {
+    // The account has already been deleted. Retained orphan records allow a later cleanup job to retry safely.
+  }
 }
 
 export async function requestPasswordReset(input: PasswordResetRequestInput) {

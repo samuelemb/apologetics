@@ -50,6 +50,22 @@ export const publicLoginSchema = z.object({
   password: z.string().min(1, "Password is required.").max(128),
 });
 
+export const changePasswordSchema = z
+  .object({
+    currentPassword: z.string().min(1, "Enter your current password.").max(128),
+    password: publicPasswordSchema,
+    confirmPassword: z.string(),
+  })
+  .refine((value) => value.password === value.confirmPassword, {
+    path: ["confirmPassword"],
+    message: "Passwords do not match.",
+  });
+
+export const deletePublicAccountSchema = z.object({
+  confirmation: z.string().refine((value) => value === "DELETE", "Type DELETE to confirm."),
+  currentPassword: z.string().min(1, "Enter your current password.").max(128),
+});
+
 export const emailVerificationSchema = z.object({
   email: normalizedEmailSchema,
   code: z
@@ -92,6 +108,8 @@ export type PublicRegistrationInput = z.infer<typeof publicRegistrationSchema>;
 export type PublicLoginInput = z.infer<typeof publicLoginSchema>;
 export type EmailVerificationInput = z.infer<typeof emailVerificationSchema>;
 export type PublicProfileInput = z.infer<typeof publicProfileSchema>;
+export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;
+export type DeletePublicAccountInput = z.infer<typeof deletePublicAccountSchema>;
 export type PasswordResetRequestInput = z.infer<typeof passwordResetRequestSchema>;
 export type PasswordResetInput = z.infer<typeof passwordResetSchema>;
 

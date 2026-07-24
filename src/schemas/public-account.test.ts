@@ -3,6 +3,8 @@ import test from "node:test";
 
 import {
   emailVerificationSchema,
+  changePasswordSchema,
+  deletePublicAccountSchema,
   passwordResetRequestSchema,
   passwordResetSchema,
   publicProfileSchema,
@@ -31,6 +33,18 @@ test("public profile validates usernames, bios, and timezones", () => {
   assert.equal(publicProfileSchema.safeParse({ name: "Reader", username: "too short" }).success, false);
   assert.equal(publicProfileSchema.safeParse({ name: "Reader", bio: "a".repeat(161) }).success, false);
   assert.equal(publicProfileSchema.safeParse({ name: "Reader", timezone: "Not/A-Timezone" }).success, false);
+});
+
+test("password changes reuse the public password policy", () => {
+  const input = { currentPassword: "CurrentPassword12", password: "NewPassword12", confirmPassword: "NewPassword12" };
+  assert.equal(changePasswordSchema.safeParse(input).success, true);
+  assert.equal(changePasswordSchema.safeParse({ ...input, confirmPassword: "DifferentPassword12" }).success, false);
+  assert.equal(changePasswordSchema.safeParse({ ...input, password: "weak", confirmPassword: "weak" }).success, false);
+});
+
+test("account deletion requires a deliberate confirmation", () => {
+  assert.equal(deletePublicAccountSchema.safeParse({ confirmation: "DELETE", currentPassword: "CurrentPassword12" }).success, true);
+  assert.equal(deletePublicAccountSchema.safeParse({ confirmation: "delete", currentPassword: "CurrentPassword12" }).success, false);
 });
 
 test("public registration rejects mismatched or weak passwords", () => {

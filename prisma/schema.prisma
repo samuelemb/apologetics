@@ -116,6 +116,8 @@ model User {
   contentLikes   ContentLike[]
   contentBookmarks ContentBookmark[]
   contentComments ContentComment[] @relation("ContentCommentAuthor")
+  commentLikes    CommentLike[]
+  commentReports  CommentReport[] @relation("CommentReportReporter")
 
   @@index([role, status])
   @@index([username])
@@ -135,11 +137,38 @@ model ContentComment {
   author      User                 @relation("ContentCommentAuthor", fields: [authorId], references: [id], onDelete: Cascade)
   parent      ContentComment?      @relation("ContentCommentReplies", fields: [parentId], references: [id], onDelete: SetNull)
   replies     ContentComment[]     @relation("ContentCommentReplies")
+  likes       CommentLike[]
+  reports     CommentReport[]
 
   @@index([contentType, contentId, createdAt])
   @@index([contentType, contentId, parentId, createdAt])
   @@index([authorId, createdAt])
   @@index([parentId])
+}
+
+model CommentLike {
+  commentId String
+  userId    String
+  createdAt DateTime @default(now())
+  comment   ContentComment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  user      User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([commentId, userId])
+  @@index([userId, createdAt])
+}
+
+model CommentReport {
+  id         String   @id @default(cuid())
+  commentId  String
+  reporterId String
+  reason     String
+  details    String?
+  createdAt  DateTime @default(now())
+  comment    ContentComment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  reporter   User @relation("CommentReportReporter", fields: [reporterId], references: [id], onDelete: Cascade)
+
+  @@unique([commentId, reporterId])
+  @@index([reporterId, createdAt])
 }
 
 model ContentLike {

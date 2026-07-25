@@ -14,6 +14,7 @@ import {
   contentCommentCreateSchema,
   contentCommentEditSchema,
   contentCommentPageSchema,
+  contentCommentReportSchema,
 } from "@/schemas/content-comment";
 
 const COMMENTS_PAGE_SIZE = 20;
@@ -21,7 +22,7 @@ const COMMENT_ACTION_WINDOW_MS = 60_000;
 
 export class ContentCommentError extends Error {
   constructor(
-    public readonly code: "FORBIDDEN" | "NOT_FOUND" | "INVALID_PARENT" | "NOT_EDITABLE" | "RATE_LIMITED",
+    public readonly code: "FORBIDDEN" | "NOT_FOUND" | "INVALID_PARENT" | "NOT_EDITABLE" | "RATE_LIMITED" | "ALREADY_REPORTED",
     message: string,
   ) {
     super(message);
@@ -85,7 +86,7 @@ export async function createContentComment(actor: PublicActor, input: unknown) {
         status: true,
         createdAt: true,
         updatedAt: true,
-        author: { select: { id: true, name: true } },
+        author: { select: { id: true, name: true, image: true } },
         _count: { select: { replies: true } },
       },
     });
@@ -95,6 +96,8 @@ export async function createContentComment(actor: PublicActor, input: unknown) {
       ...createdComment,
       isOwner: true,
       replyCount: _count.replies,
+      likeCount: 0,
+      liked: false,
     } satisfies PublicContentComment;
   });
 }
@@ -127,6 +130,38 @@ export async function deleteOwnContentComment(actor: PublicActor, commentId: str
   ]);
 }
 
+export async function toggleContentCommentLike(actor: PublicActor, commentId: string) {
+  await assertPublicActor(actor);
+  await assertCommentRateLimit(actor.id, "COMMENT_LIKE_TOGGLED", 60);
+  const comment = await prisma.contentComment.findUnique({ where: { id: commentId }, select: { status: true } });
+  if (!comment || comment.status !== ContentCommentStatus.PUBLISHED) throw new ContentCommentError("NOT_FOUND", "This comment is not available.");
+  return prisma.$transaction(async (transaction) => {
+    const existing = await transaction.commentLike.findUnique({ where: { commentId_userId: { commentId, userId: actor.id } } });
+    if (existing) await transaction.commentLike.delete({ where: { commentId_userId: { commentId, userId: actor.id } } });
+    else await transaction.commentLike.create({ data: { commentId, userId: actor.id } });
+    const count = await transaction.commentLike.count({ where: { commentId } });
+    await transaction.auditLog.create({ data: { userId: actor.id, action: "COMMENT_LIKE_TOGGLED", entityType: "ContentComment", entityId: commentId } });
+    return { liked: !existing, count };
+  });
+}
+
+export async function reportContentComment(actor: PublicActor, input: unknown) {
+  const parsed = contentCommentReportSchema.parse(input);
+  await assertPublicActor(actor);
+  await assertCommentRateLimit(actor.id, "COMMENT_REPORTED", 10);
+  const comment = await prisma.contentComment.findUnique({ where: { id: parsed.commentId }, select: { status: true } });
+  if (!comment || comment.status !== ContentCommentStatus.PUBLISHED) throw new ContentCommentError("NOT_FOUND", "This comment is not available.");
+  try {
+    await prisma.$transaction([
+      prisma.commentReport.create({ data: { commentId: parsed.commentId, reporterId: actor.id, reason: parsed.reason, details: parsed.details || null } }),
+      prisma.auditLog.create({ data: { userId: actor.id, action: "COMMENT_REPORTED", entityType: "ContentComment", entityId: parsed.commentId } }),
+    ]);
+  } catch (error) {
+    if (typeof error === "object" && error && "code" in error && error.code === "P2002") throw new ContentCommentError("ALREADY_REPORTED", "You have already reported this comment.");
+    throw error;
+  }
+}
+
 export async function moderateContentComment(actor: AdminActor, commentId: string, action: "hide" | "delete") {
   if (!canModerateComments(actor.role)) throw new ContentCommentError("FORBIDDEN", "You do not have permission to moderate comments.");
   const comment = await prisma.contentComment.findUnique({ where: { id: commentId }, select: { id: true, status: true } });
@@ -144,9 +179,11 @@ export type PublicContentComment = {
   status: ContentCommentStatus;
   createdAt: Date;
   updatedAt: Date;
-  author: { id: string; name: string };
+  author: { id: string; name: string; image: string | null };
   isOwner: boolean;
   replyCount: number;
+  likeCount: number;
+  liked: boolean;
 };
 
 type PublicContentCommentPage = { comments: PublicContentComment[]; nextCursor: string | null; totalCount: number };
@@ -162,7 +199,7 @@ async function getCommentPage(input: unknown, currentUserId?: string | null): Pr
   const [comments, totalCount] = await Promise.all([
     prisma.contentComment.findMany({
       where,
-      orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+      orderBy: [{ createdAt: parsed.sort === "oldest" ? "asc" : "desc" }, { id: parsed.sort === "oldest" ? "asc" : "desc" }],
       take: COMMENTS_PAGE_SIZE + 1,
       ...(parsed.cursor ? { cursor: { id: parsed.cursor }, skip: 1 } : {}),
       select: {
@@ -172,8 +209,9 @@ async function getCommentPage(input: unknown, currentUserId?: string | null): Pr
         status: true,
         createdAt: true,
         updatedAt: true,
-        author: { select: { id: true, name: true } },
-        _count: { select: { replies: { where: { status: ContentCommentStatus.PUBLISHED } } } },
+        author: { select: { id: true, name: true, image: true } },
+        likes: currentUserId ? { where: { userId: currentUserId }, select: { userId: true } } : false,
+        _count: { select: { replies: { where: { status: ContentCommentStatus.PUBLISHED } }, likes: true } },
       },
     }),
     prisma.contentComment.count({ where }),
@@ -181,7 +219,7 @@ async function getCommentPage(input: unknown, currentUserId?: string | null): Pr
   const hasMore = comments.length > COMMENTS_PAGE_SIZE;
   const visible = hasMore ? comments.slice(0, COMMENTS_PAGE_SIZE) : comments;
   return {
-    comments: visible.map(({ _count, ...comment }) => ({ ...comment, isOwner: comment.author.id === currentUserId, replyCount: _count.replies })),
+    comments: visible.map(({ _count, likes, ...comment }) => ({ ...comment, isOwner: comment.author.id === currentUserId, replyCount: _count.replies, likeCount: _count.likes, liked: likes?.length === 1 })),
     nextCursor: hasMore ? visible.at(-1)?.id ?? null : null,
     totalCount,
   };

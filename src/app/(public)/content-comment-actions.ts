@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import { getCurrentPublicUser, requireAdmin } from "@/lib/auth/guards";
-import { ContentCommentError, createContentComment, deleteOwnContentComment, editContentComment, getPublicContentCommentReplies, getPublicContentComments, moderateContentComment } from "@/services/content-comment.service";
+import { ContentCommentError, createContentComment, deleteOwnContentComment, editContentComment, getPublicContentCommentReplies, getPublicContentComments, moderateContentComment, reportContentComment, toggleContentCommentLike } from "@/services/content-comment.service";
 
 export type ContentCommentActionResult = { ok: true } | { ok: false; message: string };
 type CreateContentCommentActionResult =
@@ -33,6 +33,18 @@ export async function deleteOwnContentCommentAction(commentId: string): Promise<
   const user = await getCurrentPublicUser();
   if (!user) return { ok: false, message: "Sign in to delete comments." };
   try { await deleteOwnContentComment(user, commentId); return { ok: true }; } catch (error) { return resultError(error); }
+}
+
+export async function toggleContentCommentLikeAction(commentId: string) {
+  const user = await getCurrentPublicUser();
+  if (!user) return { ok: false as const, message: "Sign in to like comments." };
+  try { return { ok: true as const, summary: await toggleContentCommentLike(user, commentId) }; } catch (error) { return resultError(error); }
+}
+
+export async function reportContentCommentAction(input: unknown): Promise<ContentCommentActionResult> {
+  const user = await getCurrentPublicUser();
+  if (!user) return { ok: false, message: "Sign in to report comments." };
+  try { await reportContentComment(user, input); return { ok: true }; } catch (error) { return resultError(error); }
 }
 
 export async function loadMoreContentCommentsAction(input: unknown): Promise<ContentCommentPageActionResult> {

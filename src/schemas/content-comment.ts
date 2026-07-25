@@ -17,7 +17,14 @@ export const contentCommentEditSchema = z.object({
   body: z.string().trim().min(1, "Comment cannot be empty.").max(2_000, "Comments must be 2,000 characters or fewer."),
 });
 
+export const contentCommentReportSchema = z.object({
+  commentId: z.string().trim().min(1).max(191),
+  reason: z.enum(["SPAM", "HARASSMENT", "HATEFUL_CONTENT", "MISINFORMATION", "OFF_TOPIC", "OTHER"]),
+  details: z.string().trim().max(500).optional(),
+});
+
 export const contentCommentPageSchema = contentCommentTargetSchema.extend({
   cursor: z.string().trim().min(1).max(191).optional(),
   parentId: z.string().trim().min(1).max(191).optional(),
+  sort: z.enum(["newest", "oldest"]).optional(),
 });

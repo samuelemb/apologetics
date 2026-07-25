@@ -114,6 +114,7 @@ model User {
   emailVerificationCode EmailVerificationCode?
   passwordResetToken PasswordResetToken?
   contentLikes   ContentLike[]
+  contentBookmarks ContentBookmark[]
   contentComments ContentComment[] @relation("ContentCommentAuthor")
 
   @@index([role, status])
@@ -142,6 +143,17 @@ model ContentComment {
 }
 
 model ContentLike {
+  userId      String
+  contentType ContentType
+  contentId   String
+  createdAt   DateTime    @default(now())
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, contentType, contentId])
+  @@index([contentType, contentId])
+}
+
+model ContentBookmark {
   userId      String
   contentType ContentType
   contentId   String

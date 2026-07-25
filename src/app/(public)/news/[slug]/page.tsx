@@ -8,12 +8,13 @@ import { NewsArticleBody } from "@/components/public/news/news-article-body";
 import { NewsArticleHeader } from "@/components/public/news/news-article-header";
 import { NewsRelatedArticles } from "@/components/public/news/news-related-articles";
 import { NewsViewTracker } from "@/components/public/news/news-view-tracker";
-import { PublicContentLikeButton } from "@/components/public/public-content-like-button";
+import { ArticleInteractionBar } from "@/components/public/news/article-interaction-bar";
 import { PublicContentComments } from "@/components/public/public-content-comments";
 import { PublicContainer } from "@/components/public/public-container";
 import { ContentType } from "@/generated/prisma/enums";
 import { getCurrentPublicUser } from "@/lib/auth/guards";
 import { getContentLikeSummary } from "@/services/content-like.service";
+import { getContentBookmarkSummary } from "@/services/content-bookmark.service";
 import { getPublicContentComments } from "@/services/content-comment.service";
 import {
   getPublicNewsArticleBySlug,
@@ -122,14 +123,11 @@ export default async function NewsArticlePage({
     }),
     getCurrentPublicUser(),
   ]);
-  const likeSummary = await getContentLikeSummary(
-    { contentType: ContentType.NEWS, contentId: article.id },
-    currentUser?.id,
-  );
-  const comments = await getPublicContentComments(
-    { contentType: ContentType.NEWS, contentId: article.id },
-    currentUser?.id,
-  );
+  const [likeSummary, bookmarkSummary, comments] = await Promise.all([
+    getContentLikeSummary({ contentType: ContentType.NEWS, contentId: article.id }, currentUser?.id),
+    getContentBookmarkSummary({ contentType: ContentType.NEWS, contentId: article.id }, currentUser?.id),
+    getPublicContentComments({ contentType: ContentType.NEWS, contentId: article.id }, currentUser?.id),
+  ]);
 
   return (
     <main className="min-w-0 flex-1 bg-public-background">
@@ -184,9 +182,7 @@ export default async function NewsArticlePage({
             ) : null}
 
             <NewsArticleBody content={article.content} tags={article.tags} />
-            <section className="mt-8 border-t border-public-border pt-5" aria-label="Article likes">
-              <PublicContentLikeButton contentType={ContentType.NEWS} contentId={article.id} initialCount={likeSummary.count} initialLiked={likeSummary.liked} />
-            </section>
+            <ArticleInteractionBar articleId={article.id} slug={article.slug} title={article.title} initialLikeCount={likeSummary.count} initialLiked={likeSummary.liked} initialSaved={bookmarkSummary.saved} commentCount={comments.totalCount} />
             <PublicContentComments contentType={ContentType.NEWS} contentId={article.id} {...comments} />
           </article>
         </div>

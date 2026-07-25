@@ -9,7 +9,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
-export function PublicLoginForm() {
+export function PublicLoginForm({ callbackUrl = "/" }: { callbackUrl?: string }) {
   const router = useRouter();
   const [error, setError] = useState<string>();
   const [pending, setPending] = useState(false);
@@ -19,9 +19,9 @@ export function PublicLoginForm() {
     setPending(true);
     setError(undefined);
     try {
-      const result = await signIn("user-credentials", { email: String(formData.get("email") ?? ""), password: String(formData.get("password") ?? ""), redirect: false, callbackUrl: "/" });
+      const result = await signIn("user-credentials", { email: String(formData.get("email") ?? ""), password: String(formData.get("password") ?? ""), redirect: false, callbackUrl });
       if (!result?.ok || result.error) { setError("The email or password is incorrect, or the account is not verified."); return; }
-      router.push("/");
+      router.push(callbackUrl);
       router.refresh();
     } catch {
       setError("We could not sign you in. Please try again.");
